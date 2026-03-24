@@ -1,6 +1,6 @@
-# Compose Portal Application
+# 🚀 Compose Portal Application
 
-A **multi-module Spring Boot microservices** project with 4 independent services, static data, Thymeleaf pages, REST APIs, and ready for Docker/Kubernetes/AWS deployment.
+A **multi-module Spring Boot microservices** project with 4 independent services, static data, Thymeleaf pages, REST APIs, and ready for Docker/Kubernetes/AWS deployment with full CI/CD pipeline.
 
 ## 🏗️ Architecture
 
@@ -10,6 +10,8 @@ compose-portal-application/          (Parent POM)
 ├── user-service/                    (Port 8081 - User Management)
 ├── product-service/                 (Port 8082 - Product Catalog)
 ├── order-service/                   (Port 8083 - Order Management)
+├── .github/workflows/               (GitHub Actions CI/CD)
+├── scripts/                         (Validation & Helper Scripts)
 ├── docker-compose.yml
 ├── pom.xml                          (Parent POM)
 └── README.md
@@ -26,6 +28,42 @@ compose-portal-application/          (Parent POM)
 | Spring Actuator | Health & Monitoring        |
 | Docker          | Containerization           |
 | Docker Compose  | Multi-Container Orchestration |
+| GitHub Actions  | CI/CD Pipeline             |
+
+## 🔄 CI/CD Pipeline
+
+### 📊 Pipeline Overview
+The GitHub Actions workflow automatically builds, tests, and validates all 4 services:
+
+```mermaid
+graph LR
+    A[🔄 Push/PR] --> B[🏗️ Build & Test]
+    B --> C[🐳 Docker Build]
+    C --> D[🧪 Integration Tests]
+    D --> E[☁️ AWS Tests]
+    E --> F[📋 Summary]
+    
+    C --> C1[Gateway Service]
+    C --> C2[User Service] 
+    C --> C3[Product Service]
+    C --> C4[Order Service]
+```
+
+### 🎯 Pipeline Jobs
+
+| Job | Description | Outputs |
+|-----|-------------|---------|
+| **🏗️ Build & Test** | Maven clean package, run tests | JAR artifacts |
+| **🐳 Docker Build** | Build 4 Docker images in parallel | Docker images |
+| **🧪 Integration Tests** | Health checks via Docker Compose | Test results |
+| **☁️ AWS Connection** | Test AWS credentials (manual) | Connection status |
+| **📋 Build Summary** | Comprehensive build report | Artifacts list |
+
+### 🐳 Docker Images Produced
+- `compose-portal/gateway-service:v2.4.1`
+- `compose-portal/user-service:v2.4.1`
+- `compose-portal/product-service:v2.4.1`
+- `compose-portal/order-service:v2.4.1`
 
 ## 🚀 Quick Start
 
@@ -34,12 +72,27 @@ compose-portal-application/          (Parent POM)
 - Maven 3.8+
 - Docker & Docker Compose (optional, for containerized run)
 
-### Build All Modules
+### 🏗️ Build All Modules
 ```bash
 mvn clean install
 ```
 
-### Run Individual Services
+### 🔧 Local Validation (Mimics CI/CD)
+```powershell
+# Run the full validation pipeline locally
+.\scripts\local-build-validation.ps1
+```
+
+### 📊 Monitor GitHub Actions
+```powershell
+# Check workflow status and recent runs
+.\scripts\check-workflow-status.ps1
+
+# Watch workflow status in real-time  
+.\scripts\check-workflow-status.ps1 -Watch
+```
+
+### 🏃 Run Individual Services
 Open 4 separate terminals:
 ```bash
 # Terminal 1 - User Service
@@ -49,6 +102,17 @@ cd user-service && mvn spring-boot:run
 cd product-service && mvn spring-boot:run
 
 # Terminal 3 - Order Service
+cd order-service && mvn spring-boot:run
+
+# Terminal 4 - Gateway Service
+cd gateway-service && mvn spring-boot:run
+```
+
+### 🐳 Run with Docker Compose
+```bash
+mvn clean package -DskipTests
+docker-compose up --build
+```
 cd order-service && mvn spring-boot:run
 
 # Terminal 4 - Gateway Service
