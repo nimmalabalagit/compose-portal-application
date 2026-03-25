@@ -86,6 +86,39 @@ jobs:
         with:
           name: jar-artifacts-${{ env.VERSION }}
 
+      - name: 🔍 Debug: Check Downloaded Artifacts
+        run: |
+          echo "🔍 Debugging downloaded artifacts structure..."
+          echo "Current directory:"
+          pwd
+          echo "Directory contents:"
+          find . -name "*.jar" -type f
+          echo "Full directory tree:"
+          find . -type f | head -20
+
+      - name: 🔧 Prepare JAR files for Docker build
+        run: |
+          echo "🔧 Setting up JAR files for ${{ matrix.service }}..."
+          
+          # Ensure target directory exists in service directory
+          mkdir -p ${{ matrix.service }}/target
+          
+          # Find and copy the service JAR file to the correct location
+          SERVICE_JAR=$(find . -name "${{ matrix.service }}-*.jar" -not -name "*original*" | head -1)
+          
+          if [ -n "$SERVICE_JAR" ]; then
+            echo "📋 Found JAR: $SERVICE_JAR"
+            cp "$SERVICE_JAR" "${{ matrix.service }}/target/"
+            echo "✅ Copied JAR to ${{ matrix.service }}/target/"
+          else
+            echo "❌ Could not find JAR for ${{ matrix.service }}"
+            exit 1
+          fi
+          
+          # Verify JAR file exists in target directory
+          echo "📋 Contents of ${{ matrix.service }}/target/:"
+          ls -la ${{ matrix.service }}/target/
+
       - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -93,6 +126,7 @@ jobs:
         run: |
           echo "🐳 Building Docker image for ${{ matrix.service }}..."
           cd ${{ matrix.service }}
+          
           docker build -t ${{ env.DOCKER_REGISTRY }}/${{ matrix.service }}:${{ env.VERSION }} .
           docker build -t ${{ env.DOCKER_REGISTRY }}/${{ matrix.service }}:latest .
           echo "✅ Docker image built: ${{ env.DOCKER_REGISTRY }}/${{ matrix.service }}:${{ env.VERSION }}"
@@ -134,10 +168,17 @@ jobs:
         run: |
           echo "🐳 Loading Docker images..."
           for tar_file in *.tar; do
-            echo "Loading $tar_file..."
-            docker load < "$tar_file"
+            if [ -f "$tar_file" ]; then
+              echo "Loading $tar_file..."
+              docker load < "$tar_file"
+            fi
           done
+          
+          echo "📋 Loaded Docker images:"
           docker images
+          
+          echo "🔍 Checking for compose-portal images:"
+          docker images | grep compose-portal || echo "⚠️ No compose-portal images found yet"
 
       - name: 🚀 Start Services with Docker Compose
         run: |
