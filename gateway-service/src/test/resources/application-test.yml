@@ -1,0 +1,42 @@
+# Test Profile Configuration for Gateway Service
+server:
+  port: 0  # Random port for tests
+
+spring:
+  application:
+    name: gateway-service-test
+  profiles:
+    active: test
+  config:
+    import: ""  # Disable config imports for tests
+
+# Disable AWS services for testing
+aws:
+  parameter-store:
+    enabled: false
+  region: us-east-1
+
+# Service URLs for testing (use localhost for tests)
+services:
+  user-service-url: http://localhost:8081
+  product-service-url: http://localhost:8082
+  order-service-url: http://localhost:8083
+
+# Disable CloudWatch for tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      cloudwatch:
+        enabled: false
+
+# Test logging
+logging:
+  level:
+    com.portal.gateway: DEBUG

@@ -49,8 +49,21 @@ jobs:
       - name: 🧪 Run Tests
         run: |
           echo "🧪 Running tests for all services..."
-          mvn test -T 1C -Dmaven.test.failure.ignore=true
+          mvn test -Dmaven.test.failure.ignore=true
           echo "✅ Test execution completed!"
+
+      - name: 🔍 Debug: Check Test Reports
+        run: |
+          echo "🔍 Looking for test report files..."
+          find . -name "surefire-reports" -type d | head -10
+          find . -name "TEST-*.xml" -type f | head -10
+          echo "📊 Test report summary:"
+          for dir in */target/surefire-reports/; do
+            if [ -d "$dir" ]; then
+              echo "Found reports in: $dir"
+              ls -la "$dir" | head -5
+            fi
+          done
 
       - name: 📊 Verify Build Artifacts
         run: |
@@ -58,6 +71,16 @@ jobs:
           find . -name "*.jar" -not -path "*/original*" | while read jar; do
             echo "✅ Found: $jar ($(du -h "$jar" | cut -f1))"
           done
+
+      - name: 📋 Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: 'Maven Tests Results'
+          path: '**/target/surefire-reports/TEST-*.xml'
+          reporter: 'java-junit'
+          fail-on-error: false
+          fail-on-empty: false
 
       - name: 💾 Upload Build Artifacts
         uses: actions/upload-artifact@v4

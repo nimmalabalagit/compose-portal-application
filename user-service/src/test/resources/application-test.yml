@@ -1,0 +1,38 @@
+# Test Profile Configuration for User Service
+server:
+  port: 0  # Random port for tests
+
+spring:
+  application:
+    name: user-service-test
+  profiles:
+    active: test
+  config:
+    import: ""  # Disable config imports for tests
+
+# Disable AWS services for testing
+aws:
+  parameter-store:
+    enabled: false
+  region: us-east-1
+
+# Disable CloudWatch for tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      cloudwatch:
+        enabled: false
+
+# Test logging
+logging:
+  level:
+    com.portal.user: DEBUG
+    org.springframework.test: DEBUG
+    org.springframework.boot.test: DEBUG

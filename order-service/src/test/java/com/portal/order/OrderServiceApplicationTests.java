@@ -2,23 +2,20 @@ package com.portal.order;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@TestPropertySource(properties = {
-    "spring.config.import=",
-    "aws.parameter-store.enabled=false"
-})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class OrderServiceApplicationTests {
 
     @Test
     void contextLoads() {
-        // Basic context loading test
+        // Basic context loading test - if this passes, Spring context loaded successfully
     }
 
     @Test
     void applicationStartsSuccessfully() {
         // Test that application can start without errors
-        assert true;
+        // No assertions needed - if context loads, test passes
     }
 }
