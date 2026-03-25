@@ -1,31 +1,105 @@
 server:
-  port: 8080
+  port: ${gateway.port:8080}
 
 spring:
   application:
     name: gateway-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  config:
+    import:
+      - optional:aws-parameterstore:/compose-portal/${ENVIRONMENT:local}/
+      - optional:aws-parameterstore:/compose-portal/common/
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,env
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
   info:
     env:
       enabled: true
+  metrics:
+    export:
+      cloudwatch:
+        enabled: ${cloudwatch.metrics.enabled:false}
 
-# Service URLs configuration
+# Service URLs configuration - Override via Parameter Store in production
+services:
+  user-service-url: ${user.service.url:http://localhost:8081}
+  product-service-url: ${product.service.url:http://localhost:8082}
+  order-service-url: ${order.service.url:http://localhost:8083}
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:us-east-1}
+  parameter-store:
+    enabled: ${aws.parameter.store.enabled:false}
+
+# Logging configuration
+logging:
+  level:
+    com.portal.gateway: ${log.level:INFO}
+    org.springframework.cloud.aws: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+info:
+  app:
+    name: Gateway Service
+    description: API Gateway and Dashboard for Compose Portal Application
+    version: ${app.version:1.0.0-SNAPSHOT}
+    profiles: ${spring.profiles.active}
+    build-time: ${build.time:unknown}
+
+---
+# Local Development Profile
+spring:
+  config:
+    activate:
+      on-profile: local
+
 services:
   user-service-url: http://localhost:8081
   product-service-url: http://localhost:8082
   order-service-url: http://localhost:8083
 
-info:
-  app:
-    name: Gateway Service
-    description: API Gateway and Dashboard
-    version: 1.0.0
+---
+# Docker Compose Profile
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+services:
+  user-service-url: http://user-service:8081
+  product-service-url: http://product-service:8082
+  order-service-url: http://order-service:8083
+
+---
+# AWS ECS Production Profile
+spring:
+  config:
+    activate:
+      on-profile: aws-ecs
+
+aws:
+  parameter-store:
+    enabled: true
+
+management:
+  metrics:
+    export:
+      cloudwatch:
+        enabled: true
+
+# Production services will be loaded from Parameter Store:
+# /compose-portal/prod/user-svc-url
+# /compose-portal/prod/product-svc-url
+# /compose-portal/prod/order-svc-url
 

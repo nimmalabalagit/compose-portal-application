@@ -1,25 +1,88 @@
 server:
-  port: 8081
+  port: ${user.service.port:8081}
 
 spring:
   application:
     name: user-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  config:
+    import:
+      - optional:aws-parameterstore:/compose-portal/${ENVIRONMENT:local}/
+      - optional:aws-parameterstore:/compose-portal/common/
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,env
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
   info:
     env:
       enabled: true
+  metrics:
+    export:
+      cloudwatch:
+        enabled: ${cloudwatch.metrics.enabled:false}
+
+# Database configuration (for future RDS integration)
+database:
+  host: ${db.host:localhost}
+  port: ${db.port:5432}
+  name: ${db.name:compose_portal}
+  username: ${db.username:postgres}
+  password: ${db.password:password}
+
+# Business configuration
+user:
+  service:
+    max-users: ${user.max.count:1000}
+    cache-ttl: ${user.cache.ttl:300}
+    departments: ${user.departments:Engineering,Marketing,Sales,HR,Finance,Operations}
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:us-east-1}
+  parameter-store:
+    enabled: ${aws.parameter.store.enabled:false}
+
+# Logging configuration
+logging:
+  level:
+    com.portal.user: ${log.level:INFO}
+    org.springframework.cloud.aws: DEBUG
 
 info:
   app:
     name: User Service
-    description: User Management Microservice
-    version: 1.0.0
+    description: User Management Microservice - CRUD operations and department management
+    version: ${app.version:1.0.0-SNAPSHOT}
+    profiles: ${spring.profiles.active}
+    build-time: ${build.time:unknown}
+
+---
+# AWS ECS Production Profile
+spring:
+  config:
+    activate:
+      on-profile: aws-ecs
+
+aws:
+  parameter-store:
+    enabled: true
+
+management:
+  metrics:
+    export:
+      cloudwatch:
+        enabled: true
+
+# Production config loaded from Parameter Store:
+# /compose-portal/prod/db-host
+# /compose-portal/prod/db-password
+# /compose-portal/prod/user-max-count
 

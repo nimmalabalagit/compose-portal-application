@@ -1,25 +1,94 @@
 server:
-  port: 8083
+  port: ${order.service.port:8083}
 
 spring:
   application:
     name: order-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  config:
+    import:
+      - optional:aws-parameterstore:/compose-portal/${ENVIRONMENT:local}/
+      - optional:aws-parameterstore:/compose-portal/common/
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,env
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
   info:
     env:
       enabled: true
+  metrics:
+    export:
+      cloudwatch:
+        enabled: ${cloudwatch.metrics.enabled:false}
+
+# Database configuration (for future RDS integration)
+database:
+  host: ${db.host:localhost}
+  port: ${db.port:5432}
+  name: ${db.name:compose_portal}
+  username: ${db.username:postgres}
+  password: ${db.password:password}
+
+# Business configuration
+order:
+  service:
+    max-orders: ${order.max.count:50000}
+    cache-ttl: ${order.cache.ttl:300}
+    statuses: ${order.statuses:PENDING,PROCESSING,SHIPPED,DELIVERED,CANCELLED}
+
+# Integration with other services
+services:
+  user-service-url: ${user.service.url:http://localhost:8081}
+  product-service-url: ${product.service.url:http://localhost:8082}
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:us-east-1}
+  parameter-store:
+    enabled: ${aws.parameter.store.enabled:false}
+
+# Logging configuration
+logging:
+  level:
+    com.portal.order: ${log.level:INFO}
+    org.springframework.cloud.aws: DEBUG
 
 info:
   app:
     name: Order Service
-    description: Order Management Microservice
-    version: 1.0.0
+    description: Order Management Microservice - Order processing and fulfillment
+    version: ${app.version:1.0.0-SNAPSHOT}
+    profiles: ${spring.profiles.active}
+    build-time: ${build.time:unknown}
+
+---
+# AWS ECS Production Profile
+spring:
+  config:
+    activate:
+      on-profile: aws-ecs
+
+aws:
+  parameter-store:
+    enabled: true
+
+management:
+  metrics:
+    export:
+      cloudwatch:
+        enabled: true
+
+# Production config loaded from Parameter Store:
+# /compose-portal/prod/db-host
+# /compose-portal/prod/db-password
+# /compose-portal/prod/user-svc-url
+# /compose-portal/prod/product-svc-url
 
