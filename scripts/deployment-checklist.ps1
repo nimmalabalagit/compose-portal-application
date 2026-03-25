@@ -58,7 +58,7 @@ Write-Host "- Latest workflow should show: 🏗️ Build → 🐳 Docker → �
 Write-Host ""
 
 Write-Host "🐳 Docker Testing (If Available):" -ForegroundColor Yellow
-Write-Host "docker-compose up --build" -ForegroundColor Cyan
+Write-Host "docker compose up --build" -ForegroundColor Cyan
 Write-Host "# Test endpoints:" -ForegroundColor Gray
 Write-Host "# http://localhost:8080 (Gateway Dashboard)" -ForegroundColor Gray
 Write-Host "# http://localhost:8081 (User Service)" -ForegroundColor Gray
@@ -76,7 +76,7 @@ Write-Host ""
 
 Write-Host "🚀 Production Deployment Options:" -ForegroundColor Yellow
 Write-Host "1. 🏢 Traditional: Deploy JARs to servers" -ForegroundColor Cyan
-Write-Host "2. 🐳 Docker: Use docker-compose for orchestration" -ForegroundColor Cyan
+Write-Host "2. 🐳 Docker: Use docker compose for orchestration" -ForegroundColor Cyan
 Write-Host "3. ☸️ Kubernetes: Deploy to K8s cluster" -ForegroundColor Cyan
 Write-Host "4. ☁️ AWS ECS: Container orchestration on AWS" -ForegroundColor Cyan
 Write-Host "5. ☁️ AWS EKS: Managed Kubernetes on AWS" -ForegroundColor Cyan

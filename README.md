@@ -223,7 +223,7 @@ mvn spring-boot:run -pl order-service    # Terminal 4
 ```bash
 # Prerequisites: Docker & Docker Compose
 mvn clean package -DskipTests
-docker-compose up --build
+docker compose up --build
 
 # Access services:
 # http://localhost:8080 (Gateway Dashboard)
@@ -506,7 +506,7 @@ cd gateway-service && mvn spring-boot:run
 ### Run with Docker Compose
 ```bash
 mvn clean package -DskipTests
-docker-compose up --build
+docker compose up --build
 ```
 
 ## 🌐 Service URLs

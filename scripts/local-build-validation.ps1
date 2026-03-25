@@ -76,7 +76,7 @@ docker images | Where-Object { $_ -match "compose-portal" }
 Write-Host ""
 Write-Host "🚀 Step 6: Testing with Docker Compose..." -ForegroundColor Yellow
 try {
-    docker-compose up -d
+    docker compose up -d
     Write-Host "✅ Services started successfully!" -ForegroundColor Green
 
     Write-Host "⏳ Waiting 30 seconds for services to initialize..." -ForegroundColor Yellow
@@ -109,7 +109,7 @@ try {
 } finally {
     Write-Host ""
     Write-Host "🛑 Stopping services..." -ForegroundColor Yellow
-    docker-compose down
+    docker compose down
 }
 
 # Final Summary

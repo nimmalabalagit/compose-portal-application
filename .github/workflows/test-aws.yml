@@ -142,25 +142,76 @@ jobs:
       - name: 🚀 Start Services with Docker Compose
         run: |
           echo "🚀 Starting all services..."
-          docker-compose up -d
+          docker compose up -d
+          
+          echo "⏳ Waiting for services to start..."
+          sleep 15
+          
+          echo "📊 Container status:"
+          docker compose ps
+          
+          echo "⏳ Additional startup time..."
           sleep 30
+          
+          echo "📊 Final container status:"
+          docker compose ps
+          
           echo "✅ All services started!"
 
       - name: 🏥 Health Check All Services
         run: |
           echo "🏥 Performing health checks..."
           
-          # Gateway Service
-          curl -f http://localhost:8080/actuator/health || echo "❌ Gateway service health check failed"
+          # Wait a bit more for services to be fully ready
+          sleep 10
           
-          # User Service
-          curl -f http://localhost:8081/actuator/health || echo "❌ User service health check failed"
+          # Gateway Service - retry with timeout
+          echo "🔍 Testing Gateway Service..."
+          for i in {1..5}; do
+            if curl -f --max-time 10 http://localhost:8080/actuator/health; then
+              echo "✅ Gateway service health check passed"
+              break
+            else
+              echo "⏳ Gateway service not ready, attempt $i/5"
+              sleep 10
+            fi
+          done
           
-          # Product Service  
-          curl -f http://localhost:8082/actuator/health || echo "❌ Product service health check failed"
+          # User Service - retry with timeout  
+          echo "🔍 Testing User Service..."
+          for i in {1..5}; do
+            if curl -f --max-time 10 http://localhost:8081/actuator/health; then
+              echo "✅ User service health check passed"
+              break
+            else
+              echo "⏳ User service not ready, attempt $i/5"
+              sleep 10
+            fi
+          done
           
-          # Order Service
-          curl -f http://localhost:8083/actuator/health || echo "❌ Order service health check failed"
+          # Product Service - retry with timeout
+          echo "🔍 Testing Product Service..."
+          for i in {1..5}; do
+            if curl -f --max-time 10 http://localhost:8082/actuator/health; then
+              echo "✅ Product service health check passed"
+              break
+            else
+              echo "⏳ Product service not ready, attempt $i/5"
+              sleep 10
+            fi
+          done
+          
+          # Order Service - retry with timeout
+          echo "🔍 Testing Order Service..."
+          for i in {1..5}; do
+            if curl -f --max-time 10 http://localhost:8083/actuator/health; then
+              echo "✅ Order service health check passed"
+              break
+            else
+              echo "⏳ Order service not ready, attempt $i/5"
+              sleep 10
+            fi
+          done
           
           echo "✅ Health checks completed!"
 
@@ -168,12 +219,13 @@ jobs:
         if: failure()
         run: |
           echo "🔍 Collecting service logs..."
-          docker-compose logs --tail=50
+          docker compose logs --tail=50
 
       - name: 🛑 Stop Services
+        if: always()
         run: |
           echo "🛑 Stopping services..."
-          docker-compose down
+          docker compose down
 
   # Job 4: Test AWS Connection (if secrets are available)
   test-aws-connection:
