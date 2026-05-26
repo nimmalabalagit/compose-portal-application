@@ -1,0 +1,114 @@
+# k8s/karpenter/nodepool-general.yaml
+# WHY NodePool replaces Provisioner (deprecated in v0.33):
+# Karpenter v0.33+ migrated from Provisioner API to NodePool API.
+# NodePool is more expressive: supports disruption policies, weight-based selection,
+# and consolidation policies independently from the node template.
+# v0.37 is the version in your Terraform (Chapter 4 addon).
+
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: general
+spec:
+  # WHY template.metadata.labels:
+  # These labels appear on every node Karpenter provisions.
+  # Your Helm chart deployments use nodeSelector or affinity to target
+  # specific node pools. Labels let you separate prod from batch workloads
+  # across node pools without separate clusters.
+  template:
+    metadata:
+      labels:
+        nodepool: general
+        billing-team: platform-engineering
+    spec:
+      # WHY nodeClassRef points to EC2NodeClass:
+      # EC2NodeClass is the AWS-specific template: which AMI, which subnets,
+      # which security groups, which instance profile. NodePool handles
+      # Kubernetes scheduling constraints. This separation lets you reuse
+      # an EC2NodeClass across multiple NodePools.
+      nodeClassRef:
+        apiVersion: karpenter.k8s.aws/v1beta1
+        kind: EC2NodeClass
+        name: general
+
+      requirements:
+        # WHY limit to amd64:
+        # Your Spring Boot JARs and Docker images are built for linux/amd64.
+        # ARM64 Graviton instances are cheaper but require arm64 images.
+        # When you build multi-arch images in Chapter 5, you can add arm64 here.
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+
+        - key: kubernetes.io/os
+          operator: In
+          values: ["linux"]
+
+        # WHY On-Demand and Spot in same NodePool:
+        # Karpenter selects instance type based on pod requirements and spot availability.
+        # Spot saves 60-80% but can be interrupted. For stateless Spring Boot pods,
+        # spot interruption means a 2-minute warning → graceful pod termination →
+        # Kubernetes reschedules on another node. This is acceptable for all 4 services.
+        # If you had stateful pods (single-replica databases), you'd use On-Demand only.
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]
+
+        # WHY multiple instance families:
+        # Karpenter diversifies across instance types to reduce spot interruption risk.
+        # If all pods are on m5.xlarge and AWS reclaims all m5.xlarge spot capacity,
+        # your entire cluster goes down simultaneously. Multiple families spread the risk.
+        # m5/m6i: general purpose (your main workload)
+        # c5/c6i: compute optimized (gateway-service under high RPS)
+        # r5/r6i: memory optimized (JVM workloads with large heap)
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values:
+            - m5.large
+            - m5.xlarge
+            - m5.2xlarge
+            - m6i.large
+            - m6i.xlarge
+            - m6i.2xlarge
+            - c5.large
+            - c5.xlarge
+            - c6i.large
+            - c6i.xlarge
+            - r5.large
+            - r6i.large
+
+        # WHY limit to 2 AZs:
+        # ap-south-1 has 3 AZs (ap-south-1a, 1b, 1c).
+        # Your RDS is in ap-south-1a and 1b (Multi-AZ).
+        # Keeping compute in the same AZs as RDS primary reduces cross-AZ data transfer costs.
+        # Cross-AZ data transfer: $0.01/GB both ways = significant cost at scale.
+        - key: topology.kubernetes.io/zone
+          operator: In
+          values: ["ap-south-1a", "ap-south-1b"]
+
+  # WHY limits.cpu and memory:
+  # Without limits, Karpenter could provision unlimited EC2 instances if a misconfigured
+  # HPA suddenly requests 1000 replicas. This is a real incident pattern.
+  # The limits act as a circuit breaker: Karpenter stops provisioning when the cluster
+  # reaches 100 vCPUs and 200Gi, triggering an alert instead of a surprise AWS bill.
+  limits:
+    cpu: "100"
+    memory: "200Gi"
+
+  disruption:
+    # WHY consolidationPolicy: WhenUnderutilized:
+    # When pods are deleted (scale-down), nodes may become underutilized.
+    # Karpenter consolidates: moves pods to fewer, fuller nodes and terminates empty nodes.
+    # This is the bin-packing that saves money vs Cluster Autoscaler's scale-down which
+    # only removes nodes empty for >10 minutes.
+    consolidationPolicy: WhenUnderutilized
+    # WHY consolidateAfter: 30s:
+    # Wait 30 seconds after a node becomes underutilized before consolidating.
+    # Prevents thrashing: scale-up event shouldn't immediately trigger scale-down.
+    consolidateAfter: 30s
+    # WHY expireAfter: 720h:
+    # Nodes expire after 30 days. Forces node rotation which:
+    # 1. Applies latest Amazon EKS Optimized AMI (security patches)
+    # 2. Prevents long-running nodes from accumulating kubelet memory leaks
+    # 3. Ensures your spot interruption handling is tested regularly
+    expireAfter: 720h

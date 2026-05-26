@@ -1,0 +1,33 @@
+// k8s/observability/dashboards/compose-portal-overview.json
+// Import this into Grafana: Dashboards → Import → Upload JSON
+// Key panels and their PromQL queries:
+
+// Panel 1: Request Rate per Service
+// rate(http_server_requests_seconds_count{namespace="compose-portal"}[1m])
+
+// Panel 2: Error Rate (5xx / total) per Service
+// sum(rate(http_server_requests_seconds_count{status=~"5..",namespace="compose-portal"}[5m])) by (uri,method)
+// / sum(rate(http_server_requests_seconds_count{namespace="compose-portal"}[5m])) by (uri,method)
+
+// Panel 3: P99 Latency per Service
+// histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{namespace="compose-portal"}[5m])) by (le, app))
+
+// Panel 4: JVM Heap Usage
+// jvm_memory_used_bytes{area="heap",namespace="compose-portal"}
+// / jvm_memory_max_bytes{area="heap",namespace="compose-portal"}
+
+// Panel 5: HikariCP Active Connections
+// hikaricp_connections_active{namespace="compose-portal"}
+
+// Panel 6: OOMKill Events (the production bug demo)
+// kube_pod_container_status_last_terminated_reason{reason="OOMKilled",namespace="compose-portal"}
+
+// Panel 7: RabbitMQ Queue Depth (order-service)
+// rabbitmq_queue_messages_ready{queue="orders.created",namespace="compose-portal"}
+
+// Alert Rules (Grafana Alerting → Alert Rules):
+// ALERT: Error rate > 1% for 5 minutes
+// ALERT: P99 latency > 500ms for 5 minutes
+// ALERT: HikariCP active connections > 8 (80% of pool) for 2 minutes
+// ALERT: JVM heap > 85% for 10 minutes
+// ALERT: Pod restarts > 3 in 15 minutes (CrashLoopBackOff indicator)

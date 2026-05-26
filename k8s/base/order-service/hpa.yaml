@@ -1,0 +1,42 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: order-service-hpa
+  namespace: compose-portal
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: order-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      # WHY stabilizationWindowSeconds: 300:
+      # Without this, HPA scales down immediately when CPU drops.
+      # A traffic spike could make HPA scale up → down → up (flapping).
+      # 5-minute cooldown: HPA waits 5 min of low load before scaling down.
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60   # Remove max 1 pod per minute
+    scaleUp:
+      stabilizationWindowSeconds: 0    # Scale out immediately (no wait)
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60   # Can double pod count per minute

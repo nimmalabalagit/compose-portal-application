@@ -1,0 +1,26 @@
+# k8s/helm/compose-portal/templates/deployment.yaml (excerpt showing graceful termination)
+# WHY terminationGracePeriodSeconds: 60:
+# Spring Boot takes up to 30s to finish in-flight requests during graceful shutdown.
+# Add 10s buffer → 40s minimum. Set 60s to be safe.
+# When Karpenter drains a spot node:
+# 1. SIGTERM sent to pod → Spring Boot starts refusing new requests
+# 2. Spring Boot completes in-flight requests (up to 30s)
+# 3. Pod exits cleanly
+# 4. If 60s exceeded → SIGKILL → data loss possible
+# 60s > 30s Spring Boot shutdown → safe.
+spec:
+  template:
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: {{ .Values.service.name }}
+          lifecycle:
+            preStop:
+              exec:
+                # WHY preStop sleep:
+                # kube-proxy takes 1-2s to remove the pod from the Service endpoints list.
+                # Without this sleep: load balancer still sends traffic to the pod for 1-2s
+                # after SIGTERM, causing connection resets.
+                # preStop sleep gives kube-proxy time to drain the endpoint before Spring Boot
+                # starts refusing connections.
+                command: ["/bin/sh", "-c", "sleep 5"]

@@ -1,0 +1,322 @@
+# EstateFlow AI — Compose Portal  |  Chapter 1+2 Full Stack
+# Run from: compose-portal-application/infrastructure/
+# docker-compose up -d
+#
+# WHY additional_contexts for root-pom.xml:
+# Each service Dockerfile needs the ROOT pom.xml to resolve the Maven parent.
+# Docker build context is services/<name>/ — root pom is NOT there.
+# We pass it as an additional file named root-pom.xml via docker-compose
+# additional_contexts, then the Dockerfile copies it one level up.
+
+version: "3.8"
+
+services:
+
+  # ── DATABASES ─────────────────────────────────────────────────────────────
+
+  postgres-users:
+    image: postgres:16-alpine
+    container_name: ef-postgres-users
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdev123
+    ports:
+      - "5432:5432"
+    volumes:
+      - users_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d users_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [backend]
+
+  postgres-products:
+    image: postgres:16-alpine
+    container_name: ef-postgres-products
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdev123
+    ports:
+      - "5433:5432"
+    volumes:
+      - products_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d products_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [backend]
+
+  postgres-orders:
+    image: postgres:16-alpine
+    container_name: ef-postgres-orders
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdev123
+    ports:
+      - "5434:5432"
+    volumes:
+      - orders_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orders_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [backend]
+
+  mongodb:
+    image: mongo:7
+    container_name: ef-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo
+      MONGO_INITDB_ROOT_PASSWORD: localdev123
+      MONGO_INITDB_DATABASE: orders_audit
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    container_name: ef-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 3
+    networks: [backend]
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ef-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: localdev123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    networks: [backend]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ef-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@estateflowai.co
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    networks: [backend]
+
+  # ── SPRING BOOT SERVICES ──────────────────────────────────────────────────
+  # WHY additional_contexts:
+  # Build context = services/<name>/ (only that service's files).
+  # Root pom.xml lives at repo root — passed separately as "root-pom.xml"
+  # so the Dockerfile can copy it one level up for Maven parent resolution.
+
+  user-service:
+    build:
+      context: ../services/user-service
+      dockerfile: Dockerfile
+      additional_contexts:
+        root-pom: ../
+    container_name: ef-user
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: "8081"
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres-users:5432/users_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: localdev123
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      postgres-users: { condition: service_healthy }
+      redis:          { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks: [backend]
+
+  product-service:
+    build:
+      context: ../services/product-service
+      dockerfile: Dockerfile
+      additional_contexts:
+        root-pom: ../
+    container_name: ef-product
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: "8082"
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres-products:5432/products_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: localdev123
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      postgres-products: { condition: service_healthy }
+      redis:             { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks: [backend]
+
+  order-service:
+    build:
+      context: ../services/order-service
+      dockerfile: Dockerfile
+      additional_contexts:
+        root-pom: ../
+    container_name: ef-order
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: "8083"
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres-orders:5432/orders_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: localdev123
+      MONGODB_URI: mongodb://mongo:localdev123@mongodb:27017/orders_audit?authSource=admin
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USERNAME: rabbitmq
+      RABBITMQ_PASSWORD: localdev123
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      postgres-orders: { condition: service_healthy }
+      mongodb:         { condition: service_healthy }
+      rabbitmq:        { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks: [backend]
+
+  gateway-service:
+    build:
+      context: ../services/gateway-service
+      dockerfile: Dockerfile
+      additional_contexts:
+        root-pom: ../
+    container_name: ef-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: "8080"
+      SPRING_PROFILES_ACTIVE: docker
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      USER_SERVICE_URL: http://user-service:8081
+      PRODUCT_SERVICE_URL: http://product-service:8082
+      ORDER_SERVICE_URL: http://order-service:8083
+    depends_on:
+      redis:           { condition: service_healthy }
+      user-service:    { condition: service_healthy }
+      product-service: { condition: service_healthy }
+      order-service:   { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks: [backend, frontend-net]
+
+  # ── FRONTEND ──────────────────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: ef-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      gateway-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks: [frontend-net]
+
+  # ── OBSERVABILITY ──────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: ef-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-remote-write-receiver'
+    networks: [backend]
+
+  grafana:
+    image: grafana/grafana:10.3.3
+    container_name: ef-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge
+  frontend-net:
+    driver: bridge
+
+volumes:
+  users_pgdata:
+  products_pgdata:
+  orders_pgdata:
+  mongodb_data:
+  redis_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:

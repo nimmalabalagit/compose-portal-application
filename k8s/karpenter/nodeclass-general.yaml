@@ -1,0 +1,69 @@
+# k8s/karpenter/nodeclass-general.yaml
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: general
+spec:
+  # WHY AL2023 instead of AL2:
+  # Amazon Linux 2023 uses containerd natively (not Docker shim).
+  # AL2 reached EOL December 2025. AL2023 has: faster boot, smaller attack surface,
+  # SELinux enforcing by default, and RPM package manager updates for 2 more years.
+  amiFamily: AL2023
+
+  # WHY instance profile name matches Terraform output:
+  # The instance profile gives nodes IAM permissions: ECR pull, SSM, CloudWatch.
+  # This role was created in module/iam-roles in Chapter 4.
+  instanceProfile: "compose-portal-eks-node-profile"
+
+  # WHY subnetSelectorTerms with karpenter.sh/discovery tag:
+  # Karpenter discovers subnets by tag. This was the subnet tag set in Terraform
+  # (module/vpc/main.tf). Without this tag, EC2NodeClass returns empty subnets
+  # and Karpenter never provisions nodes — pods stay Pending forever.
+  # Silent failure: no error message, just pods stuck in Pending.
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "compose-portal-eks"
+        kubernetes.io/role/internal-elb: "1"   # Private subnets only — never public
+
+  # WHY securityGroupSelectorTerms:
+  # Nodes need the cluster security group to communicate with the EKS API server
+  # and with other pods. The tag was set on the node security group in Terraform.
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "compose-portal-eks"
+
+  # WHY userData block:
+  # AL2023 uses nodeadm for bootstrap configuration.
+  # This block runs before kubelet starts — patches kubelet config with
+  # reserved resources so system processes don't starve from pod resource pressure.
+  userData: |
+    #!/bin/bash
+    # Reserve 200m CPU and 256Mi memory for system processes
+    # Without this: kubelet and system daemons compete with pods for resources
+    # Result: node thrashing, OOMKill of system processes, node NotReady events
+    cat >> /etc/kubernetes/kubelet/config.json << 'EOF'
+    {
+      "systemReserved": {
+        "cpu": "200m",
+        "memory": "256Mi"
+      },
+      "kubeReserved": {
+        "cpu": "100m",
+        "memory": "128Mi"
+      }
+    }
+    EOF
+
+  # WHY blockDeviceMappings:
+  # Default EKS node root volume is 20GB which fills up fast with container images.
+  # 50GB gives enough room for: OS (8GB) + kubelet + container images (30GB+).
+  # gp3 is cheaper than gp2 and has better baseline performance (3000 IOPS vs 100).
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 50Gi
+        volumeType: gp3
+        iops: 3000
+        throughput: 125
+        encrypted: true        # WHY: SOC2 requires encryption at rest for all storage
+        deleteOnTermination: true

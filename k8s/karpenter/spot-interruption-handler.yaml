@@ -1,0 +1,23 @@
+# k8s/karpenter/spot-interruption-handler.yaml
+# WHY this is needed:
+# AWS gives 2-minute warning before reclaiming Spot instances via EC2 instance interruption notice.
+# Karpenter's built-in interruption handler watches the SQS queue for these notices and:
+# 1. Cordons the node (no new pods scheduled)
+# 2. Drains pods with graceful termination (respects terminationGracePeriodSeconds)
+# 3. Kubernetes reschedules pods on remaining/new nodes
+# Without the SQS queue: Karpenter doesn't see interruption notices → pods die without warning.
+# The SQS queue was created in Terraform (module/eks-addons).
+
+# Verify the interruption queue exists:
+# aws sqs get-queue-url --queue-name compose-portal-eks --region ap-south-1
+
+# This ConfigMap tells Karpenter where the queue is:
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: karpenter-global-settings
+  namespace: kube-system
+data:
+# Set during helm install in Terraform — shown here for reference:
+# settings.interruptionQueue: compose-portal-eks
+# This is the SQS queue name Karpenter polls for spot interruption + rebalance notices

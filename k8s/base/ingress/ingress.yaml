@@ -1,0 +1,58 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compose-portal-ingress
+  namespace: compose-portal
+  annotations:
+    kubernetes.io/ingress.class: alb
+
+    # WHY internet-facing (not internal):
+    # React users access via browser. Must be publicly reachable.
+    alb.ingress.kubernetes.io/scheme: internet-facing
+
+    # WHY target-type: ip (not instance):
+    # EKS pods have VPC IPs. ALB routes directly to pod IPs.
+    # Instance mode: ALB → node:NodePort → iptables → pod (extra hop)
+    # IP mode: ALB → pod IP (direct, faster, no kube-proxy overhead)
+    # This is REQUIRED for EKS. This is your interview answer for the
+    # "ALB created but no traffic" scenario.
+    alb.ingress.kubernetes.io/target-type: ip
+
+    alb.ingress.kubernetes.io/certificate-arn: >
+      arn:aws:acm:ap-south-1:371056712467:certificate/REPLACE-WITH-ACM-CERT-ARN
+
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+
+    # WHY deregistration delay 30s:
+    # When ALB deregisters a pod (drain), it waits 30s before cutting traffic.
+    # During this 30s: no new requests, in-flight requests complete.
+    # terminationGracePeriodSeconds=60: pod has 60s total.
+    # ALB stops at 30s → pod drains remaining 30s → zero dropped requests.
+    alb.ingress.kubernetes.io/deregistration-delay.timeout-seconds: "30"
+
+    alb.ingress.kubernetes.io/load-balancer-attributes: >
+      access_logs.s3.enabled=true,
+      access_logs.s3.bucket=estateflow-alb-logs-371056712467,
+      drop_invalid_header_fields.enabled=true
+
+    alb.ingress.kubernetes.io/tags: >
+      Environment=prod,Project=compose-portal,
+      ManagedBy=aws-load-balancer-controller,Team=platform
+
+spec:
+  rules:
+    - host: api.estateflowai.co
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway-service
+                port:
+                  number: 8080

@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: compose-portal-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io  # Cleanup on delete
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/nimmalabalagit/compose-portal-application
+    targetRevision: main
+    path: k8s/overlays/prod
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: compose-portal
+
+  syncPolicy:
+    automated:
+      # WHY prune: true:
+      # If you delete a Service from git, ArgoCD deletes it from cluster.
+      # Without prune, deleted resources become orphaned objects.
+      prune: true
+      # WHY selfHeal: true:
+      # If someone runs `kubectl edit` or `kubectl rollout undo`,
+      # ArgoCD detects drift within 3 minutes and reverts to git state.
+      # Git is the single source of truth — no manual kubectl in prod.
+      # This is your interview answer for Problem 5 (GitOps rollback).
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground    # Wait for child resources to delete
+      - ApplyOutOfSyncOnly=true              # Only sync changed resources (fast)
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health assessment — ArgoCD checks pod readiness
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas    # Ignore HPA-managed replica count differences

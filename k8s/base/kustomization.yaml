@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - gateway-service/deployment.yaml
+  - gateway-service/service.yaml
+  - gateway-service/hpa.yaml
+  - gateway-service/pdb.yaml
+  - gateway-service/serviceaccount.yaml
+  - user-service/deployment.yaml
+  - user-service/service.yaml
+  - user-service/hpa.yaml
+  - user-service/pdb.yaml
+  - user-service/serviceaccount.yaml
+  - product-service/deployment.yaml
+  - product-service/service.yaml
+  - product-service/hpa.yaml
+  - product-service/pdb.yaml
+  - product-service/serviceaccount.yaml
+  - order-service/deployment.yaml
+  - order-service/service.yaml
+  - order-service/hpa.yaml
+  - order-service/pdb.yaml
+  - order-service/serviceaccount.yaml
+  - ingress/ingress.yaml
+  - external-secrets/cluster-secret-store.yaml
+  - external-secrets/user-service-external-secret.yaml
+  - external-secrets/product-service-external-secret.yaml
+  - external-secrets/order-service-external-secret.yaml
+  - external-secrets/gateway-service-external-secret.yaml

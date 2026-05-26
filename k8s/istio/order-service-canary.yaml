@@ -1,0 +1,109 @@
+# k8s/istio/order-service-canary.yaml
+# WHY Istio canary vs Kubernetes rolling update:
+# Kubernetes rolling update: to achieve 10% traffic to v2, you need 10% of pods to be v2.
+# With 10 total pods, that's 1 pod — any instability in that 1 pod affects 10% of traffic.
+# Istio VirtualService: exact weight-based routing regardless of pod count.
+# 1 v2 pod out of 10 total receives EXACTLY 10% — independent of replica count.
+# This is how you test a risky change: 5% traffic, watch error rate, escalate or rollback.
+
+# Step 1: Deploy v2 of order-service (new image tag)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service-v2
+  namespace: compose-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: order-service
+        version: v2
+    spec:
+      containers:
+        - name: order-service
+          image: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/compose-portal/order-service:canary-tag
+          ports:
+            - containerPort: 8083
+---
+# Step 2: Define Istio DestinationRule (tells Istio about v1 vs v2 subsets)
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: order-service
+  namespace: compose-portal
+spec:
+  host: order-service
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      labels:
+        version: v2
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http2MaxRequests: 1000
+        pendingHttpRequests: 1000
+    # WHY outlierDetection:
+    # Circuit breaker at the Istio level — independent of Resilience4j in gateway-service.
+    # If order-service v2 is returning >50% errors, Istio stops routing to it automatically.
+    # This prevents a bad canary from cascading failures to all users.
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100
+---
+# Step 3: VirtualService — 10% to v2, 90% to v1
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: order-service-canary
+  namespace: compose-portal
+spec:
+  hosts:
+    - order-service
+  http:
+    - match:
+        # WHY header-based routing:
+        # Internal testers can hit v2 directly by sending X-Canary: true header.
+        # This is how you test the canary yourself before opening traffic percentage.
+        - headers:
+            x-canary:
+              exact: "true"
+      route:
+        - destination:
+            host: order-service
+            subset: v2
+          weight: 100
+
+    - route:
+        # Main traffic split: 10% to canary
+        - destination:
+            host: order-service
+            subset: v1
+          weight: 90
+        - destination:
+            host: order-service
+            subset: v2
+          weight: 10
+      # WHY retries at VirtualService level:
+      # If order-service v2 returns a 503 (pod starting up, not yet ready),
+      # Istio retries automatically. Your React frontend never sees the error.
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: gateway-error,connect-failure,retriable-4xx
+      # WHY timeout: 10s:
+      # order-service creates orders + publishes to RabbitMQ. Slow under load.
+      # 10s timeout prevents indefinite hanging that ties up connection threads.
+      timeout: 10s

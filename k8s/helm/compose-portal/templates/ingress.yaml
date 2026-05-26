@@ -1,0 +1,63 @@
+# k8s/helm/compose-portal/templates/ingress.yaml
+# WHY security headers on ALB (in addition to nginx in Docker):
+# Defense in depth: even if nginx is misconfigured, ALB response headers enforce security.
+# These headers are checked by security scanners and SOC2 auditors.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: compose-portal
+  namespace: compose-portal
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80,"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:ap-south-1:371056712467:certificate/your-cert-arn"
+    # WHY HTTPS-only redirect at ALB:
+    # CloudFront already enforces HTTPS, but ALB is also accessible from within VPC.
+    # Internal services calling ALB directly should also use HTTPS.
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    # WHY response headers:
+    # HSTS: browsers remember to always use HTTPS for your domain (prevents SSL stripping)
+    # X-Frame-Options: prevents clickjacking attacks (site embedded in attacker's iframe)
+    # X-Content-Type-Options: prevents MIME-type sniffing (browser won't guess content type)
+    # CSP: whitelist of sources for scripts/styles — blocks XSS data exfiltration
+    alb.ingress.kubernetes.io/load-balancer-attributes: >-
+      routing.http.response_headers_config.security_header_config.x_strict_transport_security.enabled=true,
+      routing.http.response_headers_config.security_header_config.x_content_type_options.enabled=true,
+      routing.http.response_headers_config.security_header_config.x_frame_options.value=DENY
+    alb.ingress.kubernetes.io/wafv2-acl-arn: "arn:aws:wafv2:ap-south-1:371056712467:regional/webacl/compose-portal-regional-waf/your-waf-id"
+spec:
+  rules:
+    - host: app.estateflowai.co
+      http:
+        paths:
+          - path: /api/users
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8081
+          - path: /api/products
+            pathType: Prefix
+            backend:
+              service:
+                name: product-service
+                port:
+                  number: 8082
+          - path: /api/orders
+            pathType: Prefix
+            backend:
+              service:
+                name: order-service
+                port:
+                  number: 8083
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway-service
+                port:
+                  number: 8080

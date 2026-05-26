@@ -1,0 +1,122 @@
+server:
+  port: ${product.service.port:8082}
+
+spring:
+  application:
+    name: product-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  config:
+    import:
+      - optional:aws-parameterstore:/compose-portal/${ENVIRONMENT:local}/
+      - optional:aws-parameterstore:/compose-portal/common/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+  metrics:
+    export:
+      cloudwatch:
+        enabled: ${cloudwatch.metrics.enabled:false}
+
+# Database configuration (for future RDS integration)
+database:
+  host: ${db.host:localhost}
+  port: ${db.port:5432}
+  name: ${db.name:compose_portal}
+  username: ${db.username:postgres}
+  password: ${db.password:password}
+
+# Business configuration
+product:
+  service:
+    max-products: ${product.max.count:10000}
+    cache-ttl: ${product.cache.ttl:600}
+    categories: ${product.categories:Electronics,Books,Clothing,Home,Sports,Toys}
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:us-east-1}
+  parameter-store:
+    enabled: ${aws.parameter.store.enabled:false}
+
+# Logging configuration
+logging:
+  level:
+    com.portal.product: ${log.level:INFO}
+    org.springframework.cloud.aws: DEBUG
+
+info:
+  app:
+    name: Product Service
+    description: Product Catalog Microservice - Inventory management and category operations
+    version: ${app.version:1.0.0-SNAPSHOT}
+    profiles: ${spring.profiles.active}
+    build-time: ${build.time:unknown}
+
+---
+# AWS ECS Production Profile
+spring:
+  config:
+    activate:
+      on-profile: aws-ecs
+
+aws:
+  parameter-store:
+    enabled: true
+
+management:
+  metrics:
+    export:
+      cloudwatch:
+        enabled: true
+
+# Production config loaded from Parameter Store:
+# /compose-portal/prod/db-host
+# /compose-portal/prod/db-password
+# /compose-portal/prod/product-max-count
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/products_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:localdev123}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      leak-detection-threshold: 60000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cache:
+    type: redis

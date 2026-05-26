@@ -1,0 +1,163 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+  namespace: compose-portal
+  labels:
+    app: gateway-service
+    app.kubernetes.io/name: gateway-service
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: compose-portal
+    app.kubernetes.io/managed-by: argocd
+    tags.estateflow/cost-center: engineering
+    tags.estateflow/environment: dev
+spec:
+  replicas: 2   # Overridden by Kustomize overlays
+  selector:
+    matchLabels:
+      app: gateway-service
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+      annotations:
+        # Prometheus auto-discovery — scrapes /actuator/prometheus every 15s
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8080"
+    spec:
+      serviceAccountName: gateway-service-sa
+
+      # WHY fsGroup:
+      # Spring Boot needs to write to /tmp.
+      # emptyDir volume is created with fsGroup ownership.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault  # RuntimeDefault = allow only standard syscalls
+
+      # WHY terminationGracePeriodSeconds: 60:
+      # Spot interruption gives 2-minute warning.
+      # ALB deregistration_delay=30s stops sending NEW requests at 30s.
+      # Pod has 60s to finish IN-FLIGHT requests.
+      # Spring Boot graceful shutdown drains all active requests.
+      # Net: zero dropped requests on Spot interruption.
+      # This is your interview answer for Problem 11 (Spot interruption handling).
+      terminationGracePeriodSeconds: 60
+
+      # WHY topologySpreadConstraints:
+      # Without this, K8s scheduler may place all 2 replicas in ap-south-1a.
+      # If ap-south-1a goes down: service unavailable.
+      # maxSkew:1 means at most 1 more pod in any zone vs any other zone.
+      # DoNotSchedule: K8s refuses to schedule if spread would be violated.
+      # This is your interview answer for Problem 14 (zone resilience).
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: gateway-service
+
+      containers:
+        - name: gateway-service
+          image: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service:latest
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+
+          env:
+            # WHY explicit SERVER_PORT:
+            # K8s injects env vars for every Service in the namespace.
+            # Example: USER_SERVICE_PORT=tcp://10.0.0.1:8081
+            # If Spring Boot reads SERVER_PORT from env without explicit value,
+            # it gets "tcp://10.0.0.1:8081" → parseInt fails → CrashLoopBackOff.
+            # Explicit SERVER_PORT="8080" overrides the K8s-injected USER_SERVICE_PORT.
+            # This is Problem 1 from your documented production bugs — high interview value.
+            - name: SERVER_PORT
+              value: "8080"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "k8s"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.observability.svc.cluster.local:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "gateway-service"
+            # Downward API — injects pod name as env var
+            # Appears in API response meta.pod — shows which pod served the request
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+          # External Secrets Operator syncs SSM → K8s Secret → envFrom
+          envFrom:
+            - secretRef:
+                name: gateway-service-secrets
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            # WHY readOnlyRootFilesystem: true:
+            # If an attacker executes code in your container, they cannot
+            # write malware to disk or modify executables.
+            # Spring Boot writes temp files to /tmp — we mount /tmp as emptyDir.
+            # Without the /tmp volume, Spring Boot crashes on startup.
+            # This is Problem 9 in your documented bugs list.
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]   # Drop ALL Linux capabilities (root powers)
+
+          # WHY startupProbe separate from livenessProbe:
+          # Spring Boot takes 30-90s to start (Flyway migrations!).
+          # startupProbe: 30 attempts × 10s = 5 min allowed for startup.
+          # After startupProbe passes, livenessProbe takes over (every 10s).
+          # Without startupProbe, livenessProbe kills the pod during startup.
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 3
+
+          volumeMounts:
+            # /tmp mounted as emptyDir (in-memory) because readOnlyRootFilesystem=true
+            # Spring Boot needs /tmp for temp file writes. Without this: crash on startup.
+            - name: tmp
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp
+          emptyDir: {}

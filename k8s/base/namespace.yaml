@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: compose-portal
+  labels:
+    # WHY Pod Security Admission (PSA):
+    # PSA is the replacement for PodSecurityPolicy (deprecated K8s 1.25+).
+    # enforce=restricted: Kubernetes REJECTS pods that run as root,
+    # have privilege escalation, or missing seccompProfile.
+    # Without PSA, runAsNonRoot in SecurityContext is advisory only.
+    # With PSA enforce, it's a hard gate — pod won't schedule at all.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+    app.kubernetes.io/managed-by: argocd

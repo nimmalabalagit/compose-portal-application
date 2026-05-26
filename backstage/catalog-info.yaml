@@ -1,0 +1,67 @@
+# backstage/catalog-info.yaml
+# Place this file in the root of: nimmalabalagit/compose-portal-application
+# WHY Backstage:
+# When you have 200+ microservices, engineers waste 2-3 hours per week:
+# - "Which team owns this service?" → Backstage service catalog
+# - "Where is the runbook for user-service?" → Backstage docs plugin
+# - "What APIs does this service expose?" → Backstage API plugin (Swagger)
+# - "Which services depend on order-service?" → Backstage dependency graph
+# Self-service: engineers can onboard new services without Platform team help.
+# Interview answer: "Backstage reduced platform team toil by ~60% in onboarding."
+
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: compose-portal
+  description: EstateFlow AI — Full-Stack Real Estate Platform
+  tags: [estateflowai, production, microservices]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: gateway-service
+  description: API Gateway + Thymeleaf UI + Circuit Breaker
+  annotations:
+    github.com/project-slug: nimmalabalagit/compose-portal-application
+    backstage.io/kubernetes-id: gateway-service
+    backstage.io/kubernetes-namespace: compose-portal
+    prometheus.io/alert: gateway-service-alerts
+    grafana/dashboard-selector: "app=gateway-service"
+    argocd/app-name: compose-portal-prod
+  tags: [spring-boot, gateway, java]
+  links:
+    - url: https://app.estateflowai.co
+      title: Production URL
+    - url: https://app.estateflowai.co/actuator/health
+      title: Health Check
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+  system: compose-portal
+  dependsOn:
+    - component:user-service
+    - component:product-service
+    - component:order-service
+  providesApis:
+    - gateway-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-service
+  description: User management with BCrypt + Redis cache + PostgreSQL
+  annotations:
+    github.com/project-slug: nimmalabalagit/compose-portal-application
+    backstage.io/kubernetes-id: user-service
+    backstage.io/kubernetes-namespace: compose-portal
+    backstage.io/techdocs-ref: dir:.
+  tags: [spring-boot, users, java, postgresql, redis]
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-engineering
+  system: compose-portal
+  consumesApis: []
+  providesApis:
+    - user-api

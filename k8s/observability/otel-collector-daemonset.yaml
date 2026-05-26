@@ -1,0 +1,163 @@
+# k8s/observability/otel-collector-daemonset.yaml
+# WHY DaemonSet pattern:
+# Each node runs one OTel collector. Spring Boot pods send telemetry to localhost:4317
+# (the DaemonSet pod on the same node via hostNetwork). No network hop = lower latency.
+# The DaemonSet collector batches and forwards to the Gateway collector in observability namespace.
+# WHY two-tier collector:
+# DaemonSet: lightweight, collects metrics/traces, minimal resource usage (128Mi limit)
+# Gateway: one pod per cluster, handles fan-in, batching, routing to Grafana stack
+# Cost: scraping 1000 pods from one central collector = 1000 HTTP connections
+#       DaemonSet: each collector scrapes only its local pods = N connections per node
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  namespace: observability
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+      component: daemonset
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+        component: daemonset
+    spec:
+      tolerations:
+        # WHY tolerate all taints:
+        # System nodes may have taints (e.g. node-role.kubernetes.io/control-plane).
+        # DaemonSet must run on ALL nodes including system nodes to capture their metrics.
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.95.0
+          args: ["--config=/etc/otel/config.yaml"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          ports:
+            - containerPort: 4317  # gRPC OTLP (traces + metrics from Spring Boot)
+            - containerPort: 4318  # HTTP OTLP
+            - containerPort: 8888  # OTel collector own metrics (Prometheus scrape)
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otel/config.yaml
+              subPath: config.yaml
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-daemonset-config
+      hostNetwork: false   # WHY false: Spring Boot sends to service IP, not hostNetwork
+      dnsPolicy: ClusterFirst
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-daemonset-config
+  namespace: observability
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+      # WHY prometheus receiver:
+      # Scrapes /actuator/prometheus from Spring Boot services.
+      # The DaemonSet collector scrapes only pods on its own node using pod.namespace filter.
+      # This distributes scraping load across all nodes.
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: spring-boot-services
+              scrape_interval: 15s
+              kubernetes_sd_configs:
+                - role: pod
+                  namespaces:
+                    names: [compose-portal, compose-portal-staging]
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: "true"
+                - source_labels: [__meta_kubernetes_pod_node_name]
+                  action: keep
+                  regex: ${NODE_NAME}   # WHY: Only scrape pods on this node
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                  action: replace
+                  target_label: __metrics_path__
+                  regex: (.+)
+                - source_labels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_app]
+                  separator: /
+                  target_label: service
+                - source_labels: [__meta_kubernetes_namespace]
+                  target_label: namespace
+                - source_labels: [__meta_kubernetes_pod_name]
+                  target_label: pod
+
+    processors:
+      batch:
+        # WHY batch processor:
+        # Sending each span/metric individually = high RPC overhead.
+        # Batching 1000 spans per send = 1000× fewer gRPC calls.
+        # send_batch_size: max items per batch
+        # timeout: max wait before sending a partial batch (ensures low latency)
+        send_batch_size: 1000
+        timeout: 10s
+        send_batch_max_size: 2000
+
+      memory_limiter:
+        # WHY memory_limiter:
+        # If the collector is flooded (100 services suddenly dump 10k spans),
+        # memory_limiter starts dropping telemetry instead of OOMKilling.
+        # Graceful degradation: lose some observability data instead of losing the collector.
+        check_interval: 5s
+        limit_mib: 100
+        spike_limit_mib: 20
+
+      resource:
+        # Adds cluster and environment labels to all telemetry
+        attributes:
+          - key: k8s.cluster.name
+            value: compose-portal-eks
+            action: insert
+          - key: deployment.environment
+            value: production
+            action: insert
+
+    exporters:
+      otlp/gateway:
+        endpoint: otel-gateway.observability.svc.cluster.local:4317
+        tls:
+          insecure: true   # Within cluster — internal service, not external
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [prometheus, otlp]
+          processors: [memory_limiter, batch, resource]
+          exporters: [otlp/gateway]
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch, resource]
+          exporters: [otlp/gateway]

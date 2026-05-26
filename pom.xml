@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <groupId>com.portal</groupId>
-    <artifactId>compose-portal-application</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
-
-    <name>Compose Portal Application</name>
-    <description>Multi-module Spring Boot Microservices Portal Application</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -19,17 +12,24 @@
         <relativePath/>
     </parent>
 
+    <groupId>com.estateflow</groupId>
+    <artifactId>compose-portal</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <name>EstateFlow AI — Compose Portal</name>
+
+    <modules>
+        <module>services/gateway-service</module>
+        <module>services/user-service</module>
+        <module>services/product-service</module>
+        <module>services/order-service</module>
+    </modules>
+
     <properties>
         <java.version>17</java.version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>
+        <otel.version>2.1.0</otel.version>
     </properties>
-
-    <modules>
-        <module>user-service</module>
-        <module>product-service</module>
-        <module>order-service</module>
-        <module>gateway-service</module>
-    </modules>
 
     <dependencyManagement>
         <dependencies>
@@ -42,29 +42,4 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.1.2</version>
-                    <configuration>
-                        <useSystemClassLoader>false</useSystemClassLoader>
-                        <includes>
-                            <include>**/*Test.java</include>
-                            <include>**/*Tests.java</include>
-                        </includes>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
-
 </project>
-

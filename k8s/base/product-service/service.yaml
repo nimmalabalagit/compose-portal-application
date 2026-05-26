@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: compose-portal
+  labels:
+    app: product-service
+spec:
+  # WHY ClusterIP (not LoadBalancer):
+  # Traffic enters ONLY through the ALB Ingress (managed by AWS LBC).
+  # ClusterIP keeps services internal-only — no direct exposure.
+  # ALB → gateway-service (ClusterIP) → upstream services.
+  type: ClusterIP
+  selector:
+    app: product-service
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082
+      protocol: TCP

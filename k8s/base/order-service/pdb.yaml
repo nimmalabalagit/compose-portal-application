@@ -1,0 +1,16 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: order-service-pdb
+  namespace: compose-portal
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: order-service
+# WHY PDB:
+# With replicas=2, minAvailable=1 means Kubernetes will NEVER evict
+# both pods simultaneously during a node drain.
+# Karpenter consolidation: drains one pod at a time, keeping 1 alive.
+# Rolling deploy: 1 old + 1 new → 1 old removed → 1 new + new → done.
+# This is your interview answer for Problem 6 (PDB during node drain).

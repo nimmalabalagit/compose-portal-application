@@ -1,0 +1,44 @@
+# k8s/istio/mtls-policy.yaml
+# WHY mTLS STRICT mode:
+# PERMISSIVE mode: accepts both plaintext and mTLS — useful during migration
+# STRICT mode: rejects all plaintext connections — required for SOC2 and PCI-DSS
+# With STRICT mode: if user-service tries to call product-service without a valid
+# certificate, Istio rejects the connection at the sidecar level — no code change needed.
+# This is "encryption in transit" between microservices at zero application cost.
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: compose-portal-mtls
+  namespace: compose-portal
+spec:
+  mtls:
+    mode: STRICT
+---
+# WHY AuthorizationPolicy:
+# mTLS proves identity but doesn't restrict communication.
+# AuthorizationPolicy says: "only gateway-service can call user-service".
+# If order-service tries to call user-service directly (violating your architecture),
+# Istio rejects it — even with valid mTLS certificates.
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: user-service-authz
+  namespace: compose-portal
+spec:
+  selector:
+    matchLabels:
+      app: user-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            # WHY principal matches ServiceAccount:
+            # Istio uses SPIFFE (Secure Production Identity Framework For Everyone) URIs.
+            # Each pod's SPIFFE identity: spiffe://cluster.local/ns/<namespace>/sa/<serviceaccount>
+            # This allows calls from gateway-service's service account only.
+            principals:
+              - "cluster.local/ns/compose-portal/sa/gateway-service"
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "DELETE"]
+            paths: ["/api/users/*", "/actuator/health", "/actuator/prometheus"]

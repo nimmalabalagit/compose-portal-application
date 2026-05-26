@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: compose-portal
+  labels:
+    app: gateway-service
+spec:
+  # WHY ClusterIP (not LoadBalancer):
+  # Traffic enters ONLY through the ALB Ingress (managed by AWS LBC).
+  # ClusterIP keeps services internal-only — no direct exposure.
+  # ALB → gateway-service (ClusterIP) → upstream services.
+  type: ClusterIP
+  selector:
+    app: gateway-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
