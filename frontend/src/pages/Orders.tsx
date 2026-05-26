@@ -4,19 +4,22 @@ import { userApi } from '../api/userApi';
 import type { OrderStatus } from '../api/types';
 import toast from 'react-hot-toast';
 
+// MATCHES BACKEND STATE MACHINE EXACTLY:
+// PENDING → PROCESSING or CANCELLED
+// PROCESSING → COMPLETED or CANCELLED
+// COMPLETED, CANCELLED, DELIVERED, SHIPPED → terminal (no buttons)
 const STATUS_CONFIG: Record<OrderStatus, { color: string; next: OrderStatus[] }> = {
   PENDING:    { color: 'bg-yellow-900/40 text-yellow-300 border-yellow-700',  next: ['PROCESSING', 'CANCELLED'] },
-  PROCESSING: { color: 'bg-blue-900/40 text-blue-300 border-blue-700',        next: ['SHIPPED', 'CANCELLED'] },
-  SHIPPED:    { color: 'bg-purple-900/40 text-purple-300 border-purple-700',  next: ['DELIVERED'] },
+  PROCESSING: { color: 'bg-blue-900/40 text-blue-300 border-blue-700',        next: ['COMPLETED', 'CANCELLED'] },
+  SHIPPED:    { color: 'bg-purple-900/40 text-purple-300 border-purple-700',  next: [] },
   DELIVERED:  { color: 'bg-green-900/40 text-green-300 border-green-700',     next: [] },
   CANCELLED:  { color: 'bg-red-900/40 text-red-300 border-red-700',           next: [] },
-  COMPLETED:  { color: 'bg-slate-700/40 text-slate-300 border-slate-600',     next: [] },
+  COMPLETED:  { color: 'bg-emerald-900/40 text-emerald-300 border-emerald-700', next: [] },
 };
 
 const NEXT_BTN_COLORS: Record<string, string> = {
   PROCESSING: '#3b82f6',
-  SHIPPED:    '#8b5cf6',
-  DELIVERED:  '#10B981',
+  COMPLETED:  '#10B981',
   CANCELLED:  '#ef4444',
 };
 
@@ -55,8 +58,6 @@ export default function OrdersPage() {
   const statusGroups = {
     PENDING:    orders.filter(o => o.status === 'PENDING'),
     PROCESSING: orders.filter(o => o.status === 'PROCESSING'),
-    SHIPPED:    orders.filter(o => o.status === 'SHIPPED'),
-    DELIVERED:  orders.filter(o => o.status === 'DELIVERED'),
     COMPLETED:  orders.filter(o => o.status === 'COMPLETED'),
     CANCELLED:  orders.filter(o => o.status === 'CANCELLED'),
   };
@@ -69,7 +70,6 @@ export default function OrdersPage() {
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-slate-100">Orders</h1>
         <p className="text-sm text-slate-400 font-mono mt-0.5">
@@ -78,14 +78,15 @@ export default function OrdersPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {Object.entries(statusGroups).map(([status, list]) => (
           <div key={status}
             className="p-3 rounded-lg border border-slate-700 text-center"
             style={{ background: 'rgba(15,22,41,0.5)' }}
           >
             <div className="text-2xl font-bold font-mono text-slate-100">{list.length}</div>
-            <div className={`text-xs font-mono mt-1 px-1.5 py-0.5 rounded border inline-block ${STATUS_CONFIG[status as OrderStatus]?.color}`}>
+            <div className={`text-xs font-mono mt-1 px-1.5 py-0.5 rounded border inline-block
+              ${STATUS_CONFIG[status as OrderStatus]?.color}`}>
               {status}
             </div>
           </div>
@@ -100,13 +101,11 @@ export default function OrdersPage() {
           const nextStatuses = config?.next || [];
 
           return (
-            <div
-              key={order.id}
+            <div key={order.id}
               className="p-4 rounded-lg border border-slate-700 hover:border-slate-600 transition-all"
               style={{ background: 'rgba(15,22,41,0.6)' }}
             >
               <div className="flex items-start justify-between gap-4">
-                {/* Order Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <span className="font-mono text-sm font-semibold text-cyan-400">
@@ -119,7 +118,6 @@ export default function OrdersPage() {
                       {formatPrice(order.amountTotal)}
                     </span>
                   </div>
-
                   <div className="text-xs font-mono text-slate-400 space-y-0.5">
                     {buyer && (
                       <div>
@@ -135,14 +133,10 @@ export default function OrdersPage() {
                     )}
                     <div className="text-slate-600">
                       Created: {new Date(order.createdAt).toLocaleString()}
-                      {order.updatedAt !== order.createdAt && (
-                        <span> · Updated: {new Date(order.updatedAt).toLocaleString()}</span>
-                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Status Action Buttons */}
                 {nextStatuses.length > 0 && (
                   <div className="flex flex-col gap-2 flex-shrink-0">
                     {nextStatuses.map(next => (

@@ -30,6 +30,8 @@ spring:
           predicates:
             - Path=/api/users/**
           filters:
+            - RemoveRequestHeader=Transfer-Encoding
+            - RemoveRequestHeader=Transfer-Encoding
             - name: CircuitBreaker
               args:
                 name: user-service-cb
@@ -40,6 +42,7 @@ spring:
           predicates:
             - Path=/api/products/**
           filters:
+            - RemoveRequestHeader=Transfer-Encoding
             - name: CircuitBreaker
               args:
                 name: product-service-cb
@@ -50,6 +53,7 @@ spring:
           predicates:
             - Path=/api/orders/**
           filters:
+            - RemoveRequestHeader=Transfer-Encoding
             - name: CircuitBreaker
               args:
                 name: order-service-cb
@@ -59,18 +63,22 @@ resilience4j:
   circuitbreaker:
     instances:
       user-service-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 30s
-        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 20
+        failureRateThreshold: 60
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 5
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 10
       product-service-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 30s
+        slidingWindowSize: 20
+        failureRateThreshold: 60
+        waitDurationInOpenState: 10s
+        minimumNumberOfCalls: 10
       order-service-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 30s
+        slidingWindowSize: 20
+        failureRateThreshold: 60
+        waitDurationInOpenState: 10s
+        minimumNumberOfCalls: 10
 
 management:
   endpoints:
