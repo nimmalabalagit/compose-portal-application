@@ -1,22 +1,18 @@
-// Consistent envelope — matches what Spring Boot returns
-// meta.pod tells you WHICH Kubernetes pod served this request
-// Critical for debugging multi-replica deployments
-
-export interface ApiMeta {
-  timestamp: string;
-  service: string;
-  version: string;
-  pod: string;           // Which K8s pod — the interview differentiator
-  correlationId: string;
-}
+export type UserRole = 'ADMIN' | 'AGENT' | 'BUYER' | 'SELLER' | 'MANAGER' | 'SUPPORT';
+export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'COMPLETED';
+export type PropertyType = 'APARTMENT' | 'VILLA' | 'PLOT' | 'COMMERCIAL' | 'PENTHOUSE' | 'STUDIO';
+export type ProductStatus = 'AVAILABLE' | 'SOLD' | 'RESERVED' | 'PENDING_APPROVAL';
 
 export interface ApiResponse<T> {
   data: T;
-  meta: ApiMeta;
+  meta: {
+    service: string;
+    pod: string;
+    timestamp: string;
+    version: string;
+    correlationId: string;
+  };
 }
-
-// User types
-export type UserRole = 'BUYER' | 'SELLER' | 'ADMIN';
 
 export interface User {
   id: string;
@@ -24,8 +20,10 @@ export interface User {
   lastName: string;
   email: string;
   role: UserRole;
-  phoneNumber?: string;
+  phoneNumber: string;
   active: boolean;
+  costCenter: string;
+  environment: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,48 +33,27 @@ export interface CreateUserRequest {
   lastName: string;
   email: string;
   role: UserRole;
-  phoneNumber?: string;
-  passwordHash: string;  // BCrypt — set to default on create
+  phoneNumber: string;
+  passwordHash: string;
 }
-
-// Product types
-export type PropertyType = 'APARTMENT' | 'VILLA' | 'COMMERCIAL' | 'LAND' | 'PLOT' | 'PENTHOUSE';
-export type ProductStatus = 'AVAILABLE' | 'UNDER_OFFER' | 'SOLD' | 'WITHDRAWN';
 
 export interface Product {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   propertyType: PropertyType;
   priceAmount: number;
   priceCurrency: string;
   location: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  areaSqft?: number;
+  bedrooms: number;
+  bathrooms: number;
+  areaSqft: number;
   status: ProductStatus;
   stockCount: number;
-  tags?: string[];
+  tags: string;
   createdAt: string;
   updatedAt: string;
 }
-
-export interface CreateProductRequest {
-  title: string;
-  description?: string;
-  propertyType: PropertyType;
-  priceAmount: number;
-  priceCurrency?: string;
-  location: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  areaSqft?: number;
-  status?: ProductStatus;
-  stockCount?: number;
-}
-
-// Order types
-export type OrderStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
 
 export interface Order {
   id: string;
@@ -97,7 +74,7 @@ export interface CreateOrderRequest {
   buyerUserId: string;
   productId: string;
   amountTotal: number;
-  currency?: string;
+  currency: string;
   notes?: string;
 }
 

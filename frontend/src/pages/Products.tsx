@@ -1,219 +1,239 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Package, MapPin, Bed, Bath, Maximize2 } from 'lucide-react'
-import { productApi } from '../api/productApi'
-import type { PropertyType, ProductStatus } from '../api/types'
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { productApi } from '../api/productApi';
+import { orderApi } from '../api/orderApi';
+import { userApi } from '../api/userApi';
+import type { Product, CreateOrderRequest } from '../api/types';
+import toast from 'react-hot-toast';
 
-const PROPERTY_TYPES: PropertyType[] = ['APARTMENT', 'VILLA', 'COMMERCIAL', 'LAND', 'PLOT', 'PENTHOUSE']
-const STATUSES: ProductStatus[] = ['AVAILABLE', 'UNDER_OFFER', 'SOLD', 'WITHDRAWN']
+const TYPE_COLORS: Record<string, string> = {
+  APARTMENT:  'bg-blue-900/40 text-blue-300 border-blue-700',
+  VILLA:      'bg-purple-900/40 text-purple-300 border-purple-700',
+  PLOT:       'bg-yellow-900/40 text-yellow-300 border-yellow-700',
+  COMMERCIAL: 'bg-orange-900/40 text-orange-300 border-orange-700',
+  PENTHOUSE:  'bg-pink-900/40 text-pink-300 border-pink-700',
+  STUDIO:     'bg-cyan-900/40 text-cyan-300 border-cyan-700',
+};
 
-const STATUS_COLORS: Record<ProductStatus, string> = {
-  AVAILABLE:   'status-running',
-  UNDER_OFFER: 'status-pending',
-  SOLD:        'status-completed',
-  WITHDRAWN:   'status-cancelled',
-}
+const STATUS_COLORS: Record<string, string> = {
+  AVAILABLE:        'bg-green-900/40 text-green-300 border-green-700',
+  SOLD:             'bg-red-900/40 text-red-300 border-red-700',
+  RESERVED:         'bg-yellow-900/40 text-yellow-300 border-yellow-700',
+  PENDING_APPROVAL: 'bg-slate-700/40 text-slate-300 border-slate-600',
+};
 
-const TYPE_EMOJI: Record<PropertyType, string> = {
-  APARTMENT:  '🏢',
-  VILLA:      '🏡',
-  COMMERCIAL: '🏬',
-  LAND:       '🌱',
-  PLOT:       '📐',
-  PENTHOUSE:  '🏙️',
-}
-
-function formatPrice(amount: number) {
-  if (amount >= 1_00_00_000) return `₹${(amount / 1_00_00_000).toFixed(1)}Cr`
-  if (amount >= 1_00_000)    return `₹${(amount / 1_00_000).toFixed(1)}L`
-  return `₹${amount.toLocaleString('en-IN')}`
+function formatPrice(amount: number): string {
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000)   return `₹${(amount / 100000).toFixed(0)}L`;
+  return `₹${amount.toLocaleString()}`;
 }
 
 export default function ProductsPage() {
-  const [typeFilter, setTypeFilter] = useState<PropertyType | ''>('')
-  const [statusFilter, setStatus]   = useState<ProductStatus | ''>('')
-  const [cacheHit, setCacheHit]     = useState(false)
-  const [fetchCount, setFetchCount] = useState(0)
+  const qc = useQueryClient();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedBuyerId, setSelectedBuyerId] = useState('');
+  const [orderNotes, setOrderNotes] = useState('');
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: async () => {
-      const startMs = Date.now()
-      const result = await productApi.getAll()
-      const elapsed = Date.now() - startMs
-      // < 5ms response time indicates Redis cache hit (vs ~15ms PostgreSQL)
-      setCacheHit(elapsed < 5)
-      setFetchCount((c) => c + 1)
-      return result
-    },
-    staleTime: 5 * 60_000, // 5 min — matches Redis TTL
-  })
+    queryFn: () => productApi.getAll(),
+    refetchInterval: 30_000,
+  });
 
-  const filtered = products.filter((p) => {
-    if (typeFilter   && p.propertyType !== typeFilter) return false
-    if (statusFilter && p.status       !== statusFilter) return false
-    return true
-  })
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => userApi.getAll(),
+  });
+
+  const buyers = users.filter(u => u.role === 'BUYER' || u.role === 'AGENT');
+
+  const orderMutation = useMutation({
+    mutationFn: (req: CreateOrderRequest) => orderApi.create(req),
+    onSuccess: (order) => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      toast.success(`🎉 Order ${order.orderNumber} placed! Amount: ${formatPrice(order.amountTotal)}`);
+      setSelectedProduct(null);
+      setSelectedBuyerId('');
+      setOrderNotes('');
+    },
+    onError: () => toast.error('❌ Order failed — check order service logs'),
+  });
+
+  const handlePlaceOrder = () => {
+    if (!selectedProduct || !selectedBuyerId) {
+      toast.error('Select a buyer to continue');
+      return;
+    }
+    orderMutation.mutate({
+      buyerUserId: selectedBuyerId,
+      productId: selectedProduct.id,
+      amountTotal: selectedProduct.priceAmount,
+      currency: selectedProduct.priceCurrency || 'INR',
+      notes: orderNotes || `Order for ${selectedProduct.title}`,
+    });
+  };
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="text-cyan-400 font-mono animate-pulse">Loading properties...</div>
+    </div>
+  );
 
   return (
-    <div className="space-y-5">
-
+    <div>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-slate-100">Property Listings</h1>
-          <p className="text-xs font-mono text-slate-500 mt-0.5">
-            PostgreSQL 16 products_db · NUMERIC(12,2) pricing · Redis 5min cache
-          </p>
-        </div>
-        {/* Redis cache status badge */}
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg font-mono text-xs"
-          style={{
-            background: cacheHit && fetchCount > 1
-              ? 'rgba(16,185,129,0.08)' : 'rgba(0,212,255,0.06)',
-            border: `1px solid ${cacheHit && fetchCount > 1 ? 'rgba(16,185,129,0.25)' : 'rgba(0,212,255,0.15)'}`,
-          }}
-        >
-          <div
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: cacheHit && fetchCount > 1 ? '#10B981' : '#00D4FF' }}
-          />
-          <span style={{ color: cacheHit && fetchCount > 1 ? '#10B981' : '#00D4FF' }}>
-            {cacheHit && fetchCount > 1 ? 'Redis HIT (~0.3ms)' : 'PostgreSQL (~15ms)'}
-          </span>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-slate-100">Properties</h1>
+        <p className="text-sm text-slate-400 font-mono mt-0.5">
+          {products.filter(p => p.status === 'AVAILABLE').length} available ·{' '}
+          {products.length} total · Redis cache active
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="space-y-2">
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setTypeFilter('')}
-            className="px-3 py-1.5 text-xs font-mono rounded-lg transition-colors"
-            style={{
-              background: typeFilter === '' ? 'rgba(0,212,255,0.1)' : 'var(--bg-card)',
-              border: `1px solid ${typeFilter === '' ? 'rgba(0,212,255,0.3)' : 'var(--border-subtle)'}`,
-              color: typeFilter === '' ? '#00D4FF' : '#8B9DBF',
-            }}
-          >
-            ALL TYPES
-          </button>
-          {PROPERTY_TYPES.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className="px-3 py-1.5 text-xs font-mono rounded-lg transition-colors"
-              style={{
-                background: typeFilter === t ? 'rgba(0,212,255,0.1)' : 'var(--bg-card)',
-                border: `1px solid ${typeFilter === t ? 'rgba(0,212,255,0.3)' : 'var(--border-subtle)'}`,
-                color: typeFilter === t ? '#00D4FF' : '#8B9DBF',
-              }}
-            >
-              {TYPE_EMOJI[t]} {t}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setStatus('')}
-            className="px-3 py-1.5 text-xs font-mono rounded-lg transition-colors"
-            style={{
-              background: statusFilter === '' ? 'rgba(0,212,255,0.1)' : 'var(--bg-card)',
-              border: `1px solid ${statusFilter === '' ? 'rgba(0,212,255,0.3)' : 'var(--border-subtle)'}`,
-              color: statusFilter === '' ? '#00D4FF' : '#8B9DBF',
-            }}
-          >
-            ALL STATUS
-          </button>
-          {STATUSES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatus(s)}
-              className="px-3 py-1.5 text-xs font-mono rounded-lg transition-colors"
-              style={{
-                background: statusFilter === s ? 'rgba(0,212,255,0.1)' : 'var(--bg-card)',
-                border: `1px solid ${statusFilter === s ? 'rgba(0,212,255,0.3)' : 'var(--border-subtle)'}`,
-                color: statusFilter === s ? '#00D4FF' : '#8B9DBF',
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Place Order Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="w-full max-w-md p-6 rounded-xl border border-cyan-700/50 bg-slate-900 shadow-2xl">
+            <h2 className="text-base font-mono text-cyan-400 mb-1">PLACE ORDER</h2>
+            <p className="text-sm text-slate-300 mb-4">{selectedProduct.title}</p>
 
-      {/* Cards grid */}
-      {isLoading ? (
-        <div className="text-center py-16 font-mono text-sm text-slate-500">
-          Fetching from PostgreSQL 16 products_db...
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((product) => (
-            <div key={product.id} className="card-dark p-5 hover:border-slate-600 transition-colors">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{TYPE_EMOJI[product.propertyType as PropertyType]}</span>
-                  <span
-                    className="font-mono text-xs px-1.5 py-0.5 rounded"
-                    style={{ background: 'rgba(0,212,255,0.08)', color: '#00D4FF', fontSize: '10px' }}
-                  >
-                    {product.propertyType}
+            <div className="space-y-3">
+              <div className="p-3 rounded bg-slate-800 border border-slate-700">
+                <div className="flex justify-between text-sm font-mono">
+                  <span className="text-slate-400">Amount</span>
+                  <span className="text-green-400 font-semibold">
+                    {formatPrice(selectedProduct.priceAmount)}
                   </span>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${STATUS_COLORS[product.status as ProductStatus]}`}>
-                  {product.status}
-                </span>
-              </div>
-
-              <h3 className="font-medium text-slate-200 text-sm mb-1 line-clamp-2 leading-snug">
-                {product.title}
-              </h3>
-
-              {product.description && (
-                <p className="text-xs text-slate-500 mb-3 line-clamp-2">{product.description}</p>
-              )}
-
-              {/* Price — WHY font-mono: NUMERIC(12,2) exact decimal, monospace aligns digits */}
-              <div className="metric-number text-xl font-bold mb-3">
-                {formatPrice(product.priceAmount)}
-                <span className="text-xs font-mono text-slate-500 ml-1 font-normal">{product.priceCurrency}</span>
-              </div>
-
-              <div className="flex items-center gap-1 text-slate-500 text-xs font-mono mb-3">
-                <MapPin className="w-3 h-3" />
-                <span className="truncate">{product.location}</span>
-              </div>
-
-              {/* Property details */}
-              {(product.bedrooms || product.bathrooms || product.areaSqft) && (
-                <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
-                  {product.bedrooms && (
-                    <span className="flex items-center gap-1">
-                      <Bed className="w-3 h-3" /> {product.bedrooms}BHK
-                    </span>
-                  )}
-                  {product.bathrooms && (
-                    <span className="flex items-center gap-1">
-                      <Bath className="w-3 h-3" /> {product.bathrooms}
-                    </span>
-                  )}
-                  {product.areaSqft && (
-                    <span className="flex items-center gap-1">
-                      <Maximize2 className="w-3 h-3" /> {product.areaSqft.toLocaleString()}sqft
-                    </span>
-                  )}
+                <div className="flex justify-between text-sm font-mono mt-1">
+                  <span className="text-slate-400">Location</span>
+                  <span className="text-slate-300">{selectedProduct.location}</span>
                 </div>
-              )}
+                <div className="flex justify-between text-sm font-mono mt-1">
+                  <span className="text-slate-400">Type</span>
+                  <span className="text-slate-300">{selectedProduct.propertyType}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-slate-400 mb-1 block">
+                  Select Buyer *
+                </label>
+                <select
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-100 font-mono focus:border-cyan-500 outline-none"
+                  value={selectedBuyerId}
+                  onChange={e => setSelectedBuyerId(e.target.value)}
+                >
+                  <option value="">-- Select buyer --</option>
+                  {buyers.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.firstName} {u.lastName} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-slate-400 mb-1 block">
+                  Notes (optional)
+                </label>
+                <input
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-100 font-mono focus:border-cyan-500 outline-none"
+                  value={orderNotes}
+                  onChange={e => setOrderNotes(e.target.value)}
+                  placeholder="Any special requirements..."
+                />
+              </div>
             </div>
-          ))}
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="flex-1 py-2 rounded font-mono text-sm border border-slate-600 text-slate-400 hover:border-slate-500 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePlaceOrder}
+                disabled={!selectedBuyerId || orderMutation.isPending}
+                className="flex-1 py-2 rounded font-mono text-sm font-medium transition-all disabled:opacity-40"
+                style={{ background: '#10B981', color: '#0a0f1e' }}
+              >
+                {orderMutation.isPending ? 'Placing...' : `Confirm Order →`}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="font-mono text-xs text-slate-600 text-center">
-        {filtered.length} of {products.length} listings · staleTime=5min matches Redis TTL
+      {/* Property Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {products.map(product => (
+          <div
+            key={product.id}
+            className="rounded-lg border border-slate-700 overflow-hidden hover:border-slate-500 transition-all"
+            style={{ background: 'rgba(15,22,41,0.7)' }}
+          >
+            {/* Card Header */}
+            <div className="p-4 border-b border-slate-700/50">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <h3 className="text-sm font-semibold text-slate-100 leading-tight">
+                  {product.title}
+                </h3>
+                <span className={`px-2 py-0.5 rounded text-xs border flex-shrink-0 ${STATUS_COLORS[product.status]}`}>
+                  {product.status}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 font-mono">{product.location}</p>
+            </div>
+
+            {/* Card Body */}
+            <div className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-2xl font-bold text-green-400 font-mono">
+                  {formatPrice(product.priceAmount)}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-xs border ${TYPE_COLORS[product.propertyType] || TYPE_COLORS.APARTMENT}`}>
+                  {product.propertyType}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-xs font-mono text-slate-400">
+                <div className="text-center p-2 rounded bg-slate-800/50">
+                  <div className="text-slate-200 font-medium">{product.bedrooms}</div>
+                  <div>BHK</div>
+                </div>
+                <div className="text-center p-2 rounded bg-slate-800/50">
+                  <div className="text-slate-200 font-medium">{product.bathrooms}</div>
+                  <div>Bath</div>
+                </div>
+                <div className="text-center p-2 rounded bg-slate-800/50">
+                  <div className="text-slate-200 font-medium">{product.areaSqft}</div>
+                  <div>sqft</div>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500 line-clamp-2">{product.description}</p>
+            </div>
+
+            {/* Card Footer */}
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => product.status === 'AVAILABLE' && setSelectedProduct(product)}
+                disabled={product.status !== 'AVAILABLE'}
+                className="w-full py-2 rounded font-mono text-sm font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  background: product.status === 'AVAILABLE' ? 'rgba(16,185,129,0.15)' : 'transparent',
+                  border: `1px solid ${product.status === 'AVAILABLE' ? '#10B981' : '#374151'}`,
+                  color: product.status === 'AVAILABLE' ? '#10B981' : '#6b7280',
+                }}
+              >
+                {product.status === 'AVAILABLE' ? '🏠 Buy Now' : product.status}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
-  )
+  );
 }
