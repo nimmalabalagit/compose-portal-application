@@ -15,7 +15,6 @@ resource "aws_eks_addon" "vpc_cni" {
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
   # IRSA for VPC CNI to manage ENIs on your behalf
-  service_account_role_arn = aws_iam_role.vpc_cni.arn
 }
 
 resource "aws_eks_addon" "coredns" {
