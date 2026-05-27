@@ -1,0 +1,3 @@
+postgres-users:5432:users_db:postgres:localdev123
+postgres-products:5432:products_db:postgres:localdev123
+postgres-orders:5432:orders_db:postgres:localdev123

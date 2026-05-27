@@ -1,0 +1,31 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "EstateFlow-Users",
+      "Group": "EstateFlow",
+      "Host": "postgres-users",
+      "Port": 5432,
+      "MaintenanceDB": "users_db",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    },
+    "2": {
+      "Name": "EstateFlow-Products",
+      "Group": "EstateFlow",
+      "Host": "postgres-products",
+      "Port": 5432,
+      "MaintenanceDB": "products_db",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    },
+    "3": {
+      "Name": "EstateFlow-Orders",
+      "Group": "EstateFlow",
+      "Host": "postgres-orders",
+      "Port": 5432,
+      "MaintenanceDB": "orders_db",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    }
+  }
+}

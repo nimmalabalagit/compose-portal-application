@@ -1,0 +1,33 @@
+{
+  "vhosts": [{"name": "/"}],
+  "exchanges": [
+    {
+      "name": "orders.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [],
+  "bindings": [],
+  "users": [
+    {
+      "name": "rabbitmq",
+      "password_hash": "QLByYbfFOfOdgyuCeVMp3bYMQHr2J8n3yFMnuNxp6E/gPq5N",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "rabbitmq",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ]
+}

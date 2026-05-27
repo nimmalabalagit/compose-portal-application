@@ -107,11 +107,13 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: rabbitmq
       RABBITMQ_DEFAULT_PASS: localdev123
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbitmq_management load_definitions "/etc/rabbitmq/definitions.json"
     ports:
       - "5672:5672"
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
@@ -126,8 +128,12 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@estateflowai.co
       PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
     ports:
       - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
     networks: [backend]
 
   # ── SPRING BOOT SERVICES ──────────────────────────────────────────────────
@@ -320,3 +326,4 @@ volumes:
   rabbitmq_data:
   prometheus_data:
   grafana_data:
+  pgadmin_data:
