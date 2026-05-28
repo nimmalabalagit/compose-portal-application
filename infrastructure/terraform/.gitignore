@@ -1,0 +1,8 @@
+# Terraform — never commit these
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+*.tfstate
+*.tfstate.backup
+dev.tfplan
+prod.tfplan
