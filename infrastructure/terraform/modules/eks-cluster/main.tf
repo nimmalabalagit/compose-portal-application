@@ -4,7 +4,7 @@
 #   - Cluster IAM role: allows the EKS control plane to call AWS APIs on your behalf
 #   - Node IAM role:    allows EC2 worker nodes to join the cluster + pull ECR images
 #   - IRSA:            allows specific pods to assume specific IAM roles (fine-grained)
-# Never attach application permissions to the node IAM role — use IRSA.
+# Never attach application permissions to the node IAM role - use IRSA.
 
 locals {
   cluster_name = "${var.project_name}-${var.environment}-eks"
@@ -43,7 +43,7 @@ resource "aws_eks_cluster" "main" {
   }
 
   # Enable envelope encryption for Kubernetes Secrets using a CMK
-  # INTERVIEW TALKING POINT: Without this, Kubernetes Secrets are base64 in etcd — NOT encrypted.
+  # INTERVIEW TALKING POINT: Without this, Kubernetes Secrets are base64 in etcd - NOT encrypted.
   encryption_config {
     provider {
       key_arn = aws_kms_key.eks_secrets.arn
@@ -51,7 +51,7 @@ resource "aws_eks_cluster" "main" {
     resources = ["secrets"]
   }
 
-  # Cluster logging to CloudWatch — required for SOC2 audit trail
+  # Cluster logging to CloudWatch - required for SOC2 audit trail
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
@@ -122,7 +122,7 @@ resource "aws_iam_role_policy_attachment" "ecr_read_only" {
 # INTERVIEW TALKING POINT: We use a small managed node group for system pods
 # (CoreDNS, kube-proxy, metrics-server, Karpenter controller itself).
 # Application workloads land on Karpenter-provisioned Spot nodes.
-# Karpenter cannot provision nodes for itself — bootstrap chicken-and-egg.
+# Karpenter cannot provision nodes for itself - bootstrap chicken-and-egg.
 
 resource "aws_eks_node_group" "system" {
   cluster_name    = aws_eks_cluster.main.name
@@ -130,7 +130,7 @@ resource "aws_eks_node_group" "system" {
   node_role_arn   = aws_iam_role.eks_nodes.arn
   subnet_ids      = var.private_subnet_ids
   instance_types  = ["t3.medium"]
-  capacity_type   = "ON_DEMAND"  # System nodes: ON_DEMAND only — no interruptions
+  capacity_type   = "ON_DEMAND"  # System nodes: ON_DEMAND only - no interruptions
 
   scaling_config {
     desired_size = var.min_nodes
@@ -146,12 +146,6 @@ resource "aws_eks_node_group" "system" {
     role = "system"
   }
 
-  taint {
-    key    = "CriticalAddonsOnly"
-    value  = "true"
-    effect = "NO_SCHEDULE"
-  }
-
   depends_on = [
     aws_iam_role_policy_attachment.eks_worker_node_policy,
     aws_iam_role_policy_attachment.eks_cni_policy,
@@ -163,14 +157,3 @@ resource "aws_eks_node_group" "system" {
 # EKS creates a cluster SG and a node SG automatically.
 # We export the node SG ID so RDS and ElastiCache can allow inbound from nodes.
 
-data "aws_security_group" "node" {
-  filter {
-    name   = "tag:aws:eks:cluster-name"
-    values = [aws_eks_cluster.main.name]
-  }
-  filter {
-    name   = "tag:Name"
-    values = ["*node*"]
-  }
-  depends_on = [aws_eks_node_group.system]
-}

@@ -1,9 +1,9 @@
 # modules/elasticache-redis/main.tf
 #
-# INTERVIEW TALKING POINT — Redis use cases in EstateFlow AI:
+# INTERVIEW TALKING POINT - Redis use cases in EstateFlow AI:
 #   1. API Gateway rate limiting: token bucket counter per IP (TTL = 60s)
-#   2. User service cache: @Cacheable — user by UUID (TTL = 10min)
-#   3. Product service cache: @Cacheable — product by ID (TTL = 5min)
+#   2. User service cache: @Cacheable - user by UUID (TTL = 10min)
+#   3. Product service cache: @Cacheable - product by ID (TTL = 5min)
 #   4. Spring Session (if stateful session needed in future)
 #
 # Cluster mode disabled = single primary + optional replica.
@@ -16,7 +16,7 @@ resource "aws_elasticache_subnet_group" "redis" {
 
 resource "aws_security_group" "redis" {
   name        = "${var.project_name}-${var.environment}-redis-sg"
-  description = "ElastiCache Redis — inbound from EKS nodes only"
+  description = "ElastiCache Redis - inbound from EKS nodes only"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -39,7 +39,7 @@ resource "aws_security_group" "redis" {
 
 resource "aws_elasticache_replication_group" "redis" {
   replication_group_id = "${var.project_name}-${var.environment}-redis"
-  description          = "EstateFlow AI Redis — rate limiting and cache"
+  description          = "EstateFlow AI Redis - rate limiting and cache"
   node_type            = var.node_type
   num_cache_clusters   = var.environment == "prod" ? 2 : 1
   engine               = "redis"
@@ -48,7 +48,7 @@ resource "aws_elasticache_replication_group" "redis" {
   subnet_group_name    = aws_elasticache_subnet_group.redis.name
   security_group_ids   = [aws_security_group.redis.id]
   at_rest_encryption_enabled  = true
-  transit_encryption_enabled  = true  # TLS in-transit — Spring Boot uses rediss:// URI
+  transit_encryption_enabled  = false  # Dev: plain redis:// URI
   automatic_failover_enabled  = var.environment == "prod" ? true : false
 
   tags = { Name = "${var.project_name}-${var.environment}-redis" }

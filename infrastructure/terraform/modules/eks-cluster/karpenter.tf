@@ -1,6 +1,6 @@
 # modules/eks-cluster/karpenter.tf
 #
-# INTERVIEW TALKING POINT — Karpenter architecture:
+# INTERVIEW TALKING POINT - Karpenter architecture:
 #   Traditional CA: scales node groups → slow (~3–5min), group-constrained
 #   Karpenter:      creates EC2 directly → fast (47s), instance-type diversified
 #
@@ -10,7 +10,7 @@
 #   3. An EC2NodeClass pointing to subnets/SGs via tags
 #   4. A NodePool defining instance diversity and constraints
 #
-# The NodePool and EC2NodeClass are Kubernetes CRDs — deployed via eks-addons module.
+# The NodePool and EC2NodeClass are Kubernetes CRDs - deployed via eks-addons module.
 # Here we create only the AWS IAM resources.
 
 # ── Karpenter Controller IRSA ─────────────────────────────────────────────────
@@ -139,7 +139,7 @@ resource "aws_iam_instance_profile" "karpenter_node" {
 
 resource "aws_sqs_queue" "karpenter_interruption" {
   name                      = "${local.cluster_name}-karpenter-interruption"
-  message_retention_seconds = 300  # 5 minutes — interruption events are time-sensitive
+  message_retention_seconds = 300  # 5 minutes - interruption events are time-sensitive
 
   tags = { Name = "${local.cluster_name}-karpenter-interruption" }
 }

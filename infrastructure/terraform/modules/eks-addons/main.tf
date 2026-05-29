@@ -9,36 +9,29 @@
 
 # ── EKS Managed Addons ────────────────────────────────────────────────────────
 resource "aws_eks_addon" "vpc_cni" {
-  cluster_name             = var.cluster_name
-  addon_name               = "vpc-cni"
-  addon_version            = "v1.18.1-eksbuild.3"
+  cluster_name                = var.cluster_name
+  addon_name                  = "vpc-cni"
+  addon_version               = "v1.18.1-eksbuild.3"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
-  # IRSA for VPC CNI to manage ENIs on your behalf
 }
 
 resource "aws_eks_addon" "coredns" {
-  cluster_name             = var.cluster_name
-  addon_name               = "coredns"
-  addon_version            = "v1.11.1-eksbuild.9"
+  cluster_name                = var.cluster_name
+  addon_name                  = "coredns"
+  addon_version               = "v1.11.1-eksbuild.9"
   resolve_conflicts_on_create = "OVERWRITE"
-  depends_on               = [aws_eks_addon.vpc_cni]
+  depends_on                  = [aws_eks_addon.vpc_cni]
 }
 
 resource "aws_eks_addon" "kube_proxy" {
-  cluster_name  = var.cluster_name
-  addon_name    = "kube-proxy"
-  addon_version = "v1.32.0-eksbuild.2"
+  cluster_name                = var.cluster_name
+  addon_name                  = "kube-proxy"
+  addon_version               = "v1.32.0-eksbuild.2"
   resolve_conflicts_on_create = "OVERWRITE"
 }
 
 # ── AWS Load Balancer Controller ───────────────────────────────────────────────
-# INTERVIEW TALKING POINT: AWS LBC replaces the deprecated in-tree AWS load
-# balancer controller. It provisions:
-#   - ALBs for Kubernetes Ingress resources (annotation: kubernetes.io/ingress.class: alb)
-#   - NLBs for Services of type LoadBalancer
-# Requires IRSA + subnet tags set in the VPC module.
-
 resource "helm_release" "aws_lbc" {
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"
@@ -73,18 +66,12 @@ resource "helm_release" "aws_lbc" {
 }
 
 # ── External Secrets Operator ─────────────────────────────────────────────────
-# INTERVIEW TALKING POINT: ESO syncs AWS Parameter Store / Secrets Manager values
-# into Kubernetes Secrets. Pods reference Kubernetes Secrets normally —
-# they have no knowledge of AWS. ESO handles rotation automatically
-# (refreshInterval in ExternalSecret CRD). This means rotating a DB password
-# in Parameter Store propagates to pods without redeployment.
-
 resource "helm_release" "external_secrets" {
-  name       = "external-secrets"
-  repository = "https://charts.external-secrets.io"
-  chart      = "external-secrets"
-  version    = "0.9.13"
-  namespace  = "external-secrets"
+  name             = "external-secrets"
+  repository       = "https://charts.external-secrets.io"
+  chart            = "external-secrets"
+  version          = "0.9.13"
+  namespace        = "external-secrets"
   create_namespace = true
 
   set {
@@ -95,11 +82,11 @@ resource "helm_release" "external_secrets" {
 
 # ── Karpenter ─────────────────────────────────────────────────────────────────
 resource "helm_release" "karpenter" {
-  name       = "karpenter"
-  repository = "oci://public.ecr.aws/karpenter"
-  chart      = "karpenter"
-  version    = "0.37.0"
-  namespace  = "karpenter"
+  name             = "karpenter"
+  repository       = "oci://public.ecr.aws/karpenter"
+  chart            = "karpenter"
+  version          = "0.37.0"
+  namespace        = "karpenter"
   create_namespace = true
 
   values = [
@@ -120,7 +107,7 @@ resource "helm_release" "karpenter" {
       controller = {
         resources = {
           requests = { cpu = "100m", memory = "256Mi" }
-          limits   = { cpu = "1",    memory = "1Gi"   }
+          limits   = { cpu = "1",    memory = "1Gi" }
         }
       }
     })
@@ -129,88 +116,18 @@ resource "helm_release" "karpenter" {
   depends_on = [helm_release.aws_lbc]
 }
 
-# ── Karpenter NodePool + EC2NodeClass (applied as K8s manifests) ──────────────
-# INTERVIEW TALKING POINT: NodePool defines WHAT to provision (instance families,
-# AZs, capacity types). EC2NodeClass defines HOW (AMI, subnets, security groups,
-# instance profile). The subnet and SG selectors use the discovery tags we set
-# in the VPC module — no hard-coded subnet IDs.
-
-resource "kubernetes_manifest" "karpenter_node_class" {
-  manifest = {
-    apiVersion = "karpenter.k8s.aws/v1beta1"
-    kind       = "EC2NodeClass"
-    metadata   = { name = "default" }
-    spec = {
-      amiFamily = "AL2"
-      role      = "${var.cluster_name}-karpenter-node"
-      subnetSelectorTerms = [{
-        tags = { "karpenter.sh/discovery" = var.cluster_name }
-      }]
-      securityGroupSelectorTerms = [{
-        tags = { "aws:eks:cluster-name" = var.cluster_name }
-      }]
-      blockDeviceMappings = [{
-        deviceName = "/dev/xvda"
-        ebs = {
-          volumeSize = "50Gi"
-          volumeType = "gp3"
-          iops       = 3000
-          encrypted  = true
-        }
-      }]
-    }
-  }
-  depends_on = [helm_release.karpenter]
-}
-
-resource "kubernetes_manifest" "karpenter_node_pool" {
-  manifest = {
-    apiVersion = "karpenter.sh/v1beta1"
-    kind       = "NodePool"
-    metadata   = { name = "default" }
-    spec = {
-      template = {
-        spec = {
-          nodeClassRef = {
-            apiVersion = "karpenter.k8s.aws/v1beta1"
-            kind       = "EC2NodeClass"
-            name       = "default"
-          }
-          requirements = [
-            { key = "karpenter.sh/capacity-type",          operator = "In", values = ["spot", "on-demand"] },
-            { key = "kubernetes.io/arch",                  operator = "In", values = ["amd64"] },
-            { key = "node.kubernetes.io/instance-type",    operator = "In",
-              values = ["t3.medium", "t3.large", "t3a.medium", "t3a.large",
-                        "m5.large", "m5a.large", "m6i.large", "m6a.large"] },
-          ]
-          # Terminate nodes after 24h to recycle Spot savings and refresh AMIs
-          expireAfter = "24h"
-        }
-      }
-      limits = {
-        cpu    = "100"   # 100 vCPU max across all Karpenter nodes
-        memory = "200Gi"
-      }
-      disruption = {
-        consolidationPolicy = "WhenUnderutilized"
-        consolidateAfter    = "30s"
-        # INTERVIEW TALKING POINT: Consolidation bins-pack pods onto fewer nodes
-        # and terminates empty nodes. This is how we achieve 58% cost reduction
-        # from $67/month → $28/month in the lab.
-      }
-    }
-  }
-  depends_on = [kubernetes_manifest.karpenter_node_class]
-}
+# NOTE: Karpenter NodePool + EC2NodeClass applied via kubectl AFTER cluster exists
+# Files: k8s/karpenter/nodeclass-general.yaml + nodepool-general.yaml
 
 # ── Metrics Server ────────────────────────────────────────────────────────────
-# Required for HPA to read CPU/memory metrics
 resource "helm_release" "metrics_server" {
   name       = "metrics-server"
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
   chart      = "metrics-server"
   version    = "3.12.1"
   namespace  = "kube-system"
+
+  depends_on = [helm_release.aws_lbc]
 }
 
 # ── ArgoCD ────────────────────────────────────────────────────────────────────
@@ -221,6 +138,7 @@ resource "helm_release" "argocd" {
   version          = "6.7.18"
   namespace        = "argocd"
   create_namespace = true
+  depends_on       = [helm_release.aws_lbc]
 
   values = [
     yamlencode({
@@ -228,12 +146,11 @@ resource "helm_release" "argocd" {
         domain = "argocd.${var.cluster_name}.internal"
       }
       server = {
-        # Expose ArgoCD via port-forward only — no public ALB
         service = { type = "ClusterIP" }
       }
       configs = {
         params = {
-          "server.insecure" = true  # TLS terminated at ALB/ingress layer
+          "server.insecure" = true
         }
       }
     })

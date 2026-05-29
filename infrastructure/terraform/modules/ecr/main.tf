@@ -1,8 +1,8 @@
 # modules/ecr/main.tf
 #
-# INTERVIEW TALKING POINT — ECR best practices at interview level:
+# INTERVIEW TALKING POINT - ECR best practices at interview level:
 #   1. IMMUTABLE tags: prevents accidental overwrites of :latest in production.
-#      CI always pushes by SHA tag — never mutable :latest.
+#      CI always pushes by SHA tag - never mutable :latest.
 #   2. Lifecycle policies: auto-delete untagged images > 1 day old (builds that failed).
 #      Keep only last 10 tagged versions per repo.
 #   3. ECR Enhanced Scanning: uses AWS Inspector to scan on push + continuously.
@@ -13,15 +13,16 @@
 resource "aws_ecr_repository" "services" {
   for_each = toset(var.services)
 
-  name                 = "${var.project_name}/${each.value}"
+  name                 = each.value
   image_tag_mutability = "IMMUTABLE"  # Prevents :latest overwrite
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   encryption_configuration {
-    encryption_type = "KMS"  # Default is AES256; KMS gives audit trail
+    encryption_type = "AES256"
   }
 
   tags = { Service = each.value }

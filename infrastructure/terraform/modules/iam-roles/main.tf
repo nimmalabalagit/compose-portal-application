@@ -1,6 +1,6 @@
 # modules/iam-roles/main.tf
 #
-# INTERVIEW TALKING POINT — IRSA trust policy anatomy:
+# INTERVIEW TALKING POINT - IRSA trust policy anatomy:
 #   The trust policy says: "Allow the OIDC provider to assume this role,
 #   but ONLY when the token's sub claim equals
 #   system:serviceaccount:<namespace>:<service-account-name>"
@@ -135,7 +135,7 @@ resource "aws_iam_role" "aws_lbc" {
   assume_role_policy = data.aws_iam_policy_document.irsa_assume_role["aws-load-balancer-controller"].json
 }
 
-# AWS provides the managed policy for LBC — it's well-maintained and comprehensive
+# AWS provides the managed policy for LBC - it's well-maintained and comprehensive
 data "http" "lbc_policy" {
   url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.7.2/docs/install/iam_policy.json"
 }
@@ -170,7 +170,7 @@ resource "aws_iam_role_policy" "external_secrets" {
         "ssm:GetParametersByPath",
         "ssm:DescribeParameters",
       ]
-      # ESO accesses all compose-portal parameters — scoped to project
+      # ESO accesses all compose-portal parameters - scoped to project
       Resource = "arn:aws:ssm:${var.aws_region}:${var.aws_account_id}:parameter/${var.project_name}/*"
     }]
   })

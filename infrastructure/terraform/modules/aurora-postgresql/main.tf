@@ -1,6 +1,6 @@
 # modules/aurora-postgresql/main.tf
 #
-# INTERVIEW TALKING POINT — Aurora vs RDS PostgreSQL:
+# INTERVIEW TALKING POINT - Aurora vs RDS PostgreSQL:
 #   Aurora PostgreSQL: shared distributed storage (6-way replication across 3 AZs),
 #     sub-10s failover, storage grows automatically, read replicas share same storage.
 #   RDS PostgreSQL: block storage per instance, ~60-120s failover, storage pre-allocated.
@@ -25,7 +25,7 @@ resource "aws_db_subnet_group" "aurora" {
 
 resource "aws_security_group" "aurora" {
   name        = "${var.project_name}-${var.environment}-aurora-sg"
-  description = "Aurora PostgreSQL — inbound from EKS nodes only"
+  description = "Aurora PostgreSQL - inbound from EKS nodes only"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -49,7 +49,7 @@ resource "aws_security_group" "aurora" {
   tags = { Name = "${var.project_name}-${var.environment}-aurora-sg" }
 }
 
-# Aurora cluster — uses a randomly generated master password stored in SSM
+# Aurora cluster - uses a randomly generated master password stored in SSM
 resource "random_password" "aurora_master" {
   length  = 32
   special = false  # Aurora password: no special chars to avoid shell escaping issues
@@ -59,13 +59,13 @@ resource "aws_ssm_parameter" "aurora_master_password" {
   name  = "/${var.project_name}/${var.environment}/db/master_password"
   type  = "SecureString"
   value = random_password.aurora_master.result
-  tags  = { Purpose = "Aurora master password — managed by Terraform" }
+  tags  = { Purpose = "Aurora master password - managed by Terraform" }
 }
 
 resource "aws_rds_cluster" "aurora" {
   cluster_identifier        = "${var.project_name}-${var.environment}-aurora"
   engine                    = "aurora-postgresql"
-  engine_version            = "16.2"
+  engine_version            = "16.4"
   database_name             = "compose_users_db"  # Default DB; others created via Flyway
   master_username           = var.master_username
   master_password           = random_password.aurora_master.result

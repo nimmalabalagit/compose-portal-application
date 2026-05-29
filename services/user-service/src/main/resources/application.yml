@@ -92,3 +92,4 @@ spring:
   cache:
     type: redis
 # Phase C trigger
+

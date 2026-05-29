@@ -58,7 +58,7 @@ resource "aws_subnet" "private" {
     # ALB Controller discovers private subnets via this tag (internal ALBs)
     "kubernetes.io/role/internal-elb"                   = "1"
     "kubernetes.io/cluster/${local.name_prefix}-eks"    = "shared"
-    # Karpenter subnet discovery — NodePool selects subnets by this tag
+    # Karpenter subnet discovery - NodePool selects subnets by this tag
     "karpenter.sh/discovery"                            = "${local.name_prefix}-eks"
   }
 }
@@ -103,7 +103,7 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# One private route table per AZ — routes to that AZ's NAT Gateway
+# One private route table per AZ - routes to that AZ's NAT Gateway
 resource "aws_route_table" "private" {
   count  = length(var.private_subnet_cidrs)
   vpc_id = aws_vpc.main.id

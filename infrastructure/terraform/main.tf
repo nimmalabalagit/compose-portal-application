@@ -96,7 +96,7 @@ module "eks_addons" {
   vpc_id                    = module.vpc.vpc_id
   lbc_irsa_role_arn         = module.iam_roles.lbc_role_arn
   external_secrets_role_arn = module.iam_roles.external_secrets_role_arn
-  karpenter_role_arn        = module.eks_cluster.karpenter_node_role_arn
+  karpenter_role_arn        = module.eks_cluster.karpenter_controller_role_arn
 
   depends_on = [module.eks_cluster, module.iam_roles]
 }
