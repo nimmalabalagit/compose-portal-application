@@ -1,0 +1,8 @@
+title = "EstateFlow AI Gitleaks Config"
+
+[allowlist]
+  description = "Local dev files — not production secrets"
+  paths = [
+    "infrastructure/start.sh",
+    "infrastructure/rabbitmq/definitions.json"
+  ]
