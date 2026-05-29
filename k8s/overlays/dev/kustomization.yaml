@@ -45,7 +45,7 @@ images:
     newTag: dev-latest
   - name: user-service
     newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/user-service
-    newTag: dev-latest
+    newTag: sha-2d48275dfbb70c9450a62a837399cfc0e5eccd65
   - name: product-service
     newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service
     newTag: dev-latest
