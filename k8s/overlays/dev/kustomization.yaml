@@ -1,19 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
   - ../../base
-
 patches:
-  # Dev: 1 replica (save cost)
   - target:
       kind: Deployment
     patch: |
       - op: replace
         path: /spec/replicas
         value: 1
-
-  # Dev: smaller resources
   - target:
       kind: Deployment
     patch: |
@@ -29,8 +24,6 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/resources/limits/memory
         value: "512Mi"
-
-  # Dev: HPA min=1 (allow scale to zero effectively)
   - target:
       kind: HorizontalPodAutoscaler
     patch: |
@@ -40,21 +33,22 @@ patches:
       - op: replace
         path: /spec/maxReplicas
         value: 3
-
-  # Dev: faster ESO refresh
   - target:
       kind: ExternalSecret
     patch: |
       - op: replace
         path: /spec/refreshInterval
         value: "5m"
-
 images:
   - name: gateway-service
+    newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service
     newTag: dev-latest
   - name: user-service
+    newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/user-service
     newTag: dev-latest
   - name: product-service
+    newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service
     newTag: dev-latest
   - name: order-service
+    newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/order-service
     newTag: dev-latest
