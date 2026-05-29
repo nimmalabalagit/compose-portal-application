@@ -92,8 +92,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
-        working-directory: services/${{ matrix.service }}
-        run: mvn clean package -DskipTests --no-transfer-progress
+        run: |
+          # Copy root pom.xml so Maven can resolve parent POM
+          cp pom.xml services/${{ matrix.service }}/../pom.xml 2>/dev/null || true
+          cd services/${{ matrix.service }}
+          mvn clean package -DskipTests --no-transfer-progress
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
