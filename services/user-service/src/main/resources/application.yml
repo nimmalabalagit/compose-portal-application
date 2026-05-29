@@ -91,3 +91,4 @@ spring:
       port: ${REDIS_PORT:6379}
   cache:
     type: redis
+# Phase C trigger
