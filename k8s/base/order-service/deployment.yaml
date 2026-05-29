@@ -41,7 +41,7 @@ spec:
               app: order-service
       containers:
         - name: order-service
-          image: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/order-service:latest
+          image: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/order-service:dev-latest
           ports:
             - name: http
               containerPort: 8083

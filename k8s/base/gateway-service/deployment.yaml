@@ -64,7 +64,7 @@ spec:
 
       containers:
         - name: gateway-service
-          image: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service:latest
+          image: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service:dev-latest
           ports:
             - name: http
               containerPort: 8080

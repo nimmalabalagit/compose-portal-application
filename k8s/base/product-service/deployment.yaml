@@ -41,7 +41,7 @@ spec:
               app: product-service
       containers:
         - name: product-service
-          image: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service:latest
+          image: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service:dev-latest
           ports:
             - name: http
               containerPort: 8082
