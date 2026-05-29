@@ -186,20 +186,35 @@ jobs:
         run: |
           IMAGE_TAG="sha-${{ github.sha }}"
           echo '${{ needs.detect-changes.outputs.matrix }}' | python3 -c "
-          import json, sys, re
-          data = json.load(sys.stdin)
-          services = [item['service'] for item in data.get('include', [])]
-          with open('k8s/overlays/dev/kustomization.yaml', 'r') as f:
-              content = f.read()
-          for svc in services:
-              content = re.sub(
-                  r'(- name: ' + svc + r'\n    newName: [^\n]+\n    newTag: )[^\n]+',
-                  r'\g<1>${IMAGE_TAG}',
-                  content
-              )
-          with open('k8s/overlays/dev/kustomization.yaml', 'w') as f:
-              f.write(content)
-          print('Updated:', services)
+import json, sys
+import subprocess
+data = json.load(sys.stdin)
+services = [item['service'] for item in data.get('include', [])]
+image_tag = '${IMAGE_TAG}'
+with open('k8s/overlays/dev/kustomization.yaml', 'r') as f:
+    lines = f.readlines()
+result = []
+i = 0
+while i < len(lines):
+    line = lines[i]
+    result.append(line)
+    if '- name:' in line:
+        svc_name = line.strip().replace('- name:', '').strip()
+        if svc_name in services:
+            i += 1
+            if i < len(lines) and 'newName:' in lines[i]:
+                result.append(lines[i])
+                i += 1
+            if i < len(lines) and 'newTag:' in lines[i]:
+                indent = len(lines[i]) - len(lines[i].lstrip())
+                result.append(' ' * indent + 'newTag: ' + image_tag + '
+')
+                i += 1
+                continue
+    i += 1
+with open('k8s/overlays/dev/kustomization.yaml', 'w') as f:
+    f.writelines(result)
+print('Updated services:', services)
           "
 
       - name: Commit and push
