@@ -41,10 +41,10 @@ patches:
         value: "5m"
 images:
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service
-    newTag: sha-5b2bb2a8f13824d2a76dbec3baab49a9febf718d
+    newTag: sha-817430ed15ea2434e907d4dd824383f19ca4dd90
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/user-service
-    newTag: sha-5b2bb2a8f13824d2a76dbec3baab49a9febf718d
+    newTag: sha-817430ed15ea2434e907d4dd824383f19ca4dd90
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service
-    newTag: sha-5b2bb2a8f13824d2a76dbec3baab49a9febf718d
+    newTag: sha-817430ed15ea2434e907d4dd824383f19ca4dd90
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/order-service
-    newTag: sha-5b2bb2a8f13824d2a76dbec3baab49a9febf718d
+    newTag: sha-817430ed15ea2434e907d4dd824383f19ca4dd90
