@@ -19,7 +19,6 @@ spec:
         - key: node.kubernetes.io/instance-type
           operator: In
           values: ["t3.medium","t3.large","t3a.medium","m5.large","m6i.large"]
-      expireAfter: 24h
   limits:
     cpu: "100"
     memory: 200Gi
