@@ -16,11 +16,28 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 COPY --from=builder /build/target/*.jar app.jar
 
-# WHY RDS CA bundle:
-# DocumentDB requires TLS. The AWS RDS CA bundle contains the root certificate
-# that DocumentDB uses. Without it, MongoDB driver cannot verify the server cert.
-# Downloaded at build time — no runtime dependency on external URLs.
-RUN apk add --no-cache wget &&     wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem     -O /app/rds-combined-ca-bundle.pem &&     chown appuser:appgroup /app/rds-combined-ca-bundle.pem &&     apk del wget
+# WHY import DocumentDB CA into JVM truststore:
+# MongoDB Java driver 4.x does not support tlsCAFile in URI — it is silently ignored.
+# The driver uses the JVM default truststore (cacerts) for TLS verification.
+# DocumentDB uses AWS RDS CA which is NOT in the default JVM truststore.
+# Fix: download global-bundle.pem, split into individual certs, import each into cacerts.
+# After this, tls=true in URI works without any code change.
+RUN apk add --no-cache wget openssl && \
+    wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
+      -O /tmp/global-bundle.pem && \
+    csplit -z -f /tmp/rds-cert- /tmp/global-bundle.pem \
+      '/-----BEGIN CERTIFICATE-----/' '{*}' 2>/dev/null || true && \
+    JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java)))) && \
+    TRUSTSTORE="${JAVA_HOME}/lib/security/cacerts" && \
+    for cert in /tmp/rds-cert-*; do \
+      alias="rds-$(basename $cert)"; \
+      keytool -import -trustcacerts -noprompt \
+        -alias "$alias" -file "$cert" \
+        -keystore "$TRUSTSTORE" \
+        -storepass changeit 2>/dev/null || true; \
+    done && \
+    rm -f /tmp/rds-cert-* /tmp/global-bundle.pem && \
+    apk del wget openssl
 
 RUN chown appuser:appgroup app.jar
 USER appuser
