@@ -10,3 +10,4 @@ public class GatewayApplication {
         SpringApplication.run(GatewayApplication.class, args);
     }
 }
+// K8s routing fix Sat May 30 09:03:18 UTC 2026

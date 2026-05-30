@@ -6,3 +6,4 @@ import org.springframework.cache.annotation.EnableCaching;
 public class ProductApplication {
     public static void main(String[] args) { SpringApplication.run(ProductApplication.class, args); }
 }
+// K8s routing fix Sat May 30 09:03:18 UTC 2026
