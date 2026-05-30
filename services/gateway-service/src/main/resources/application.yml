@@ -32,7 +32,6 @@ spring:
             - Path=/api/users/**
           filters:
             - RemoveRequestHeader=Transfer-Encoding
-            - RemoveRequestHeader=Transfer-Encoding
             - name: CircuitBreaker
               args:
                 name: user-service-cb
