@@ -125,7 +125,8 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/orders_audit}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/orders_audit?connectTimeoutMS=3000&serverSelectionTimeoutMS=3000}
+      auto-index-creation: false
   cache:
     type: redis
   rabbitmq:
@@ -161,7 +162,8 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/orders_audit}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/orders_audit?connectTimeoutMS=3000&serverSelectionTimeoutMS=3000}
+      auto-index-creation: false
   cache:
     type: redis
   rabbitmq:
