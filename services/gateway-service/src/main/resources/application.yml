@@ -19,7 +19,8 @@ spring:
             allowedOrigins:
               - "http://localhost:5173"
               - "http://localhost:3000"
-              - "https://app.estateflowai.co"
+              - "https://www.estateflowai.co"
+              - "https://api.estateflowai.co"
             allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
             allowedHeaders: ["*"]
             allowCredentials: true
