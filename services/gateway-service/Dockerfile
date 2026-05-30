@@ -1,4 +1,5 @@
 # Stage 1: Build
+ARG BUILD_DATE
 FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /build
 RUN apk add --no-cache maven
