@@ -25,40 +25,6 @@ spring:
             allowedHeaders: ["*"]
             allowCredentials: true
             maxAge: 3600
-      routes:
-        - id: user-service
-          uri: ${USER_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=/api/users/**
-          filters:
-            - RemoveRequestHeader=Transfer-Encoding
-            - name: CircuitBreaker
-              args:
-                name: user-service-cb
-                fallbackUri: forward:/fallback/user-service
-
-        - id: product-service
-          uri: ${PRODUCT_SERVICE_URL:http://localhost:8082}
-          predicates:
-            - Path=/api/products/**
-          filters:
-            - RemoveRequestHeader=Transfer-Encoding
-            - name: CircuitBreaker
-              args:
-                name: product-service-cb
-                fallbackUri: forward:/fallback/product-service
-
-        - id: order-service
-          uri: ${ORDER_SERVICE_URL:http://localhost:8083}
-          predicates:
-            - Path=/api/orders/**
-          filters:
-            - RemoveRequestHeader=Transfer-Encoding
-            - name: CircuitBreaker
-              args:
-                name: order-service-cb
-                fallbackUri: forward:/fallback/order-service
-
 resilience4j:
   circuitbreaker:
     instances:
