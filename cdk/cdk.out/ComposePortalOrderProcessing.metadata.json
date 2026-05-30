@@ -1,0 +1,273 @@
+{
+  "/ComposePortalOrderProcessing": [
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)",
+        "Immediate._onImmediate (/tmp/tmpkmuxd0wy/lib/program.js:1:211921)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...App.synth in aws-cdk-lib...",
+        "/tmp/tmpkmuxd0wy/lib/program.js:1:543 (/tmp/tmpkmuxd0wy/lib/program.js:1:5434)"
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...App.synth in aws-cdk-lib...",
+        "/tmp/tmpkmuxd0wy/lib/program.js:1:543 (/tmp/tmpkmuxd0wy/lib/program.js:1:5434)"
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrdersDLQ/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrdersDLQ8E8CD9EE"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Queue2 in aws-cdk-lib...",
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)",
+        "Immediate._onImmediate (/tmp/tmpkmuxd0wy/lib/program.js:1:211921)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrdersQueue/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrdersQueue3DFA1D51"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Queue2 in aws-cdk-lib...",
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)",
+        "Immediate._onImmediate (/tmp/tmpkmuxd0wy/lib/program.js:1:211921)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrdersTopic/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrdersTopic47790A41"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Topic2 in aws-cdk-lib...",
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)",
+        "Immediate._onImmediate (/tmp/tmpkmuxd0wy/lib/program.js:1:211921)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrderProcessor/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrderProcessor53D1FCB8"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Function2 in aws-cdk-lib...",
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)",
+        "Immediate._onImmediate (/tmp/tmpkmuxd0wy/lib/program.js:1:211921)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Function2 in aws-cdk-lib...",
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)"
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...App.synth in aws-cdk-lib...",
+        "/tmp/tmpkmuxd0wy/lib/program.js:1:543 (/tmp/tmpkmuxd0wy/lib/program.js:1:5434)",
+        "Kernel._Kernel_ensureSync (/tmp/tmpkmuxd0wy/lib/program.js:1:69889)",
+        "Kernel.invoke (/tmp/tmpkmuxd0wy/lib/program.js:1:54294)"
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrdersQueue/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrdersQueuePolicy060934B1"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...WrappedClass.addSubscription in aws-cdk-lib...",
+        "/tmp/tmpkmuxd0wy/lib/program.js:1:543 (/tmp/tmpkmuxd0wy/lib/program.js:1:5434)",
+        "Kernel._Kernel_ensureSync (/tmp/tmpkmuxd0wy/lib/program.js:1:69889)",
+        "Kernel.invoke (/tmp/tmpkmuxd0wy/lib/program.js:1:54294)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)"
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrdersQueue/ComposePortalOrderProcessingOrdersTopicBEF79B56/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrdersQueueComposePortalOrderProcessingOrdersTopicBEF79B56693EAF66"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...WrappedClass.addSubscription in aws-cdk-lib...",
+        "/tmp/tmpkmuxd0wy/lib/program.js:1:543 (/tmp/tmpkmuxd0wy/lib/program.js:1:5434)",
+        "Kernel._Kernel_ensureSync (/tmp/tmpkmuxd0wy/lib/program.js:1:69889)",
+        "Kernel.invoke (/tmp/tmpkmuxd0wy/lib/program.js:1:54294)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)",
+        "Immediate._onImmediate (/tmp/tmpkmuxd0wy/lib/program.js:1:211921)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrderProcessor/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrderProcessorServiceRole79A9F6CA"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Function2 in aws-cdk-lib...",
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)",
+        "Immediate._onImmediate (/tmp/tmpkmuxd0wy/lib/program.js:1:211921)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrderProcessor/LogRetention/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrderProcessorLogRetentionAB02CB2A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Function2 in aws-cdk-lib...",
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)",
+        "Immediate._onImmediate (/tmp/tmpkmuxd0wy/lib/program.js:1:211921)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrderProcessor/SqsEventSource:ComposePortalOrderProcessingOrdersQueue51634715/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrderProcessorSqsEventSourceComposePortalOrderProcessingOrdersQueue51634715F599C5B2"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...WrappedClass.addEventSource in aws-cdk-lib...",
+        "/tmp/tmpkmuxd0wy/lib/program.js:1:543 (/tmp/tmpkmuxd0wy/lib/program.js:1:5434)",
+        "Kernel._Kernel_ensureSync (/tmp/tmpkmuxd0wy/lib/program.js:1:69889)",
+        "Kernel.invoke (/tmp/tmpkmuxd0wy/lib/program.js:1:54294)",
+        "KernelHost.processRequest (/tmp/tmpkmuxd0wy/lib/program.js:1:212822)",
+        "KernelHost.run (/tmp/tmpkmuxd0wy/lib/program.js:1:211877)"
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Function2 in aws-cdk-lib...",
+        "Kernel._Kernel_create (/tmp/tmpkmuxd0wy/lib/program.js:1:61273)",
+        "Kernel.create (/tmp/tmpkmuxd0wy/lib/program.js:1:52004)"
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/OrderProcessor/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "OrderProcessorServiceRoleDefaultPolicyD826B340"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ComposePortalOrderProcessing/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ]
+}

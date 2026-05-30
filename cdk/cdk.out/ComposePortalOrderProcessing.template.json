@@ -1,0 +1,391 @@
+{
+ "Resources": {
+  "OrdersDLQ8E8CD9EE": {
+   "Type": "AWS::SQS::Queue",
+   "Properties": {
+    "MessageRetentionPeriod": 1209600,
+    "QueueName": "compose-portal-orders-dlq"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrdersDLQ/Resource"
+   }
+  },
+  "OrdersQueue3DFA1D51": {
+   "Type": "AWS::SQS::Queue",
+   "Properties": {
+    "QueueName": "compose-portal-orders",
+    "RedrivePolicy": {
+     "deadLetterTargetArn": {
+      "Fn::GetAtt": [
+       "OrdersDLQ8E8CD9EE",
+       "Arn"
+      ]
+     },
+     "maxReceiveCount": 3
+    },
+    "VisibilityTimeout": 180
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrdersQueue/Resource"
+   }
+  },
+  "OrdersQueuePolicy060934B1": {
+   "Type": "AWS::SQS::QueuePolicy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sqs:SendMessage",
+       "Condition": {
+        "ArnEquals": {
+         "aws:SourceArn": {
+          "Ref": "OrdersTopic47790A41"
+         }
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "sns.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::GetAtt": [
+         "OrdersQueue3DFA1D51",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Queues": [
+     {
+      "Ref": "OrdersQueue3DFA1D51"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrdersQueue/Policy/Resource"
+   }
+  },
+  "OrdersQueueComposePortalOrderProcessingOrdersTopicBEF79B56693EAF66": {
+   "Type": "AWS::SNS::Subscription",
+   "Properties": {
+    "Endpoint": {
+     "Fn::GetAtt": [
+      "OrdersQueue3DFA1D51",
+      "Arn"
+     ]
+    },
+    "Protocol": "sqs",
+    "RawMessageDelivery": true,
+    "TopicArn": {
+     "Ref": "OrdersTopic47790A41"
+    }
+   },
+   "DependsOn": [
+    "OrdersQueuePolicy060934B1"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrdersQueue/ComposePortalOrderProcessingOrdersTopicBEF79B56/Resource"
+   }
+  },
+  "OrdersTopic47790A41": {
+   "Type": "AWS::SNS::Topic",
+   "Properties": {
+    "TopicName": "compose-portal-order-events"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrdersTopic/Resource"
+   }
+  },
+  "OrderProcessorServiceRole79A9F6CA": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrderProcessor/ServiceRole/Resource"
+   }
+  },
+  "OrderProcessorServiceRoleDefaultPolicyD826B340": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "sqs:ReceiveMessage",
+        "sqs:ChangeMessageVisibility",
+        "sqs:GetQueueUrl",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "OrdersQueue3DFA1D51",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "OrderProcessorServiceRoleDefaultPolicyD826B340",
+    "Roles": [
+     {
+      "Ref": "OrderProcessorServiceRole79A9F6CA"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrderProcessor/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "OrderProcessor53D1FCB8": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-371056712467-ap-south-1",
+     "S3Key": "5070f74f2b33b653035cf74b39c5328fc1078cc3e176323860df1c35c7f19cb3.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "ENVIRONMENT": "dev",
+      "LOG_LEVEL": "INFO"
+     }
+    },
+    "FunctionName": "compose-portal-order-processor",
+    "Handler": "handler.process_order",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "OrderProcessorServiceRole79A9F6CA",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.12",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "OrderProcessorServiceRoleDefaultPolicyD826B340",
+    "OrderProcessorServiceRole79A9F6CA"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrderProcessor/Resource",
+    "aws:asset:path": "asset.5070f74f2b33b653035cf74b39c5328fc1078cc3e176323860df1c35c7f19cb3",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "OrderProcessorLogRetentionAB02CB2A": {
+   "Type": "Custom::LogRetention",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A",
+      "Arn"
+     ]
+    },
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "OrderProcessor53D1FCB8"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 30
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrderProcessor/LogRetention/Resource"
+   }
+  },
+  "OrderProcessorSqsEventSourceComposePortalOrderProcessingOrdersQueue51634715F599C5B2": {
+   "Type": "AWS::Lambda::EventSourceMapping",
+   "Properties": {
+    "BatchSize": 10,
+    "EventSourceArn": {
+     "Fn::GetAtt": [
+      "OrdersQueue3DFA1D51",
+      "Arn"
+     ]
+    },
+    "FunctionName": {
+     "Ref": "OrderProcessor53D1FCB8"
+    },
+    "FunctionResponseTypes": [
+     "ReportBatchItemFailures"
+    ],
+    "MaximumBatchingWindowInSeconds": 0
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/OrderProcessor/SqsEventSource:ComposePortalOrderProcessingOrdersQueue51634715/Resource"
+   }
+  },
+  "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/Resource"
+   }
+  },
+  "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:PutRetentionPolicy",
+        "logs:DeleteRetentionPolicy"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
+    "Roles": [
+     {
+      "Ref": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aFD4BFC8A": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Handler": "index.handler",
+    "Runtime": "nodejs22.x",
+    "Timeout": 900,
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-371056712467-ap-south-1",
+     "S3Key": "2819175352ad1ce0dae768e83fc328fb70fb5f10b4a8ff0ccbcb791f02b0716d.zip"
+    },
+    "Role": {
+     "Fn::GetAtt": [
+      "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB",
+      "Arn"
+     ]
+    }
+   },
+   "DependsOn": [
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB",
+    "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRole9741ECFB"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8a/Resource",
+    "aws:asset:path": "asset.2819175352ad1ce0dae768e83fc328fb70fb5f10b4a8ff0ccbcb791f02b0716d",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/2VOTU/DMAz9Lbu7BlohzgzBCaTRcp/SzHSmbVLqhGmK8t9RUlaEuPh92NZ7JZa3d3i9UScp9KEvBm4xNE7pHtRJ9kE+BcOrJ0/w8G4WkufODqzPq7nICGIEQ+Nb0TNPjq1JF3/0m51YJzeTCIMa24PC8OSNvjys/PGLjGusnzW9qGli06X1fzcCqxFDbYfcM+Nvw7VctVci5ATvE4BUuPW6J7dVQjDYTvDZdjU5Mik9Qj5rnOp+gmuSnAoXEmF3dkdrriq8KbHafAhzMXvjeCSsF/wGrxQI3GMBAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComposePortalOrderProcessing/CDKMetadata/Default"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
