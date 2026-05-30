@@ -104,6 +104,16 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            # WHY explicit service URLs:
+            # K8s injects USER_SERVICE_PORT=tcp://ip:8081 which Spring reads
+            # as USER_SERVICE_URL fallback causing localhost routing.
+            # Explicit URLs override K8s injection — permanent routing fix.
+            - name: USER_SERVICE_URL
+              value: "http://user-service:8081"
+            - name: PRODUCT_SERVICE_URL
+              value: "http://product-service:8082"
+            - name: ORDER_SERVICE_URL
+              value: "http://order-service:8083"
 
           # External Secrets Operator syncs SSM → K8s Secret → envFrom
           envFrom:
