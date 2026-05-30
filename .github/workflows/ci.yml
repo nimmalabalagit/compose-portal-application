@@ -88,7 +88,8 @@ jobs:
 
       - name: Build
         run: |
-          mvn clean package -DskipTests --no-transfer-progress -pl services/${{ matrix.service }} -am
+          mvn install -N --no-transfer-progress
+          mvn clean package -DskipTests --no-transfer-progress -pl services/${{ matrix.service }}
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
