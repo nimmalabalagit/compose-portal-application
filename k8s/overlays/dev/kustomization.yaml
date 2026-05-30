@@ -42,7 +42,7 @@ patches:
 images:
   - name: gateway-service
     newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service
-    newTag: sha-1fe5140d4adb4648b7e8829e8eea5197277acead
+    newTag: sha-4d469eaf966a0f3436c96e474ccba3849caaf59f
   - name: user-service
     newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/user-service
     newTag: sha-1fe5140d4adb4648b7e8829e8eea5197277acead
