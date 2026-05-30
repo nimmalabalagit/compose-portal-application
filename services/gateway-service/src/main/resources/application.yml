@@ -103,5 +103,3 @@ spring:
     redis:
       host: ${REDIS_HOST:redis.compose-portal.svc.cluster.local}
       port: ${REDIS_PORT:6379}
-// pipeline fix Sat May 30 12:53:31 UTC 2026
-// rebuild 1780146392
