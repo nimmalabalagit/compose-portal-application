@@ -210,7 +210,8 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "GitHub Actions"
-          git pull origin main --rebase
+          git fetch origin
+          git reset --hard origin/main
           git add k8s/overlays/dev/kustomization.yaml
           git diff --staged --quiet || git commit -m "ci: update images to sha-${{ github.sha }} [skip ci]"
           git push
