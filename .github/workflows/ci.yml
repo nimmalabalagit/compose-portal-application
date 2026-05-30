@@ -40,6 +40,8 @@ jobs:
               - 'services/product-service/**'
             order-service:
               - 'services/order-service/**'
+            frontend:
+              - 'services/frontend/**'
 
       - name: Build matrix
         id: set-matrix
@@ -50,6 +52,7 @@ jobs:
           [ "${{ steps.changes.outputs.user-service }}" = "true" ] && SERVICES+=("user-service") && PORTS+=("8081")
           [ "${{ steps.changes.outputs.product-service }}" = "true" ] && SERVICES+=("product-service") && PORTS+=("8082")
           [ "${{ steps.changes.outputs.order-service }}" = "true" ] && SERVICES+=("order-service") && PORTS+=("8083")
+          [ "${{ steps.changes.outputs.frontend }}" = "true" ] && SERVICES+=("frontend") && PORTS+=("80")
           if [ ${#SERVICES[@]} -eq 0 ]; then
             echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
             echo "any_changed=false" >> $GITHUB_OUTPUT
@@ -76,22 +79,40 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
+        if: matrix.service != 'frontend'
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+
+      - name: Setup Node.js
+        if: matrix.service == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: services/frontend/package-lock.json
 
       - name: Secret scan (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
+      - name: Build Java service
+        if: matrix.service != 'frontend'
         run: |
           mvn install -N --no-transfer-progress
           mvn clean package -DskipTests --no-transfer-progress -pl services/${{ matrix.service }}
 
+      - name: Build Frontend
+        if: matrix.service == 'frontend'
+        run: |
+          cd services/frontend
+          npm ci
+          npm run build
+
       - name: Upload JAR
+        if: matrix.service != 'frontend'
         uses: actions/upload-artifact@v4
         with:
           name: jar-${{ matrix.service }}-${{ github.sha }}
@@ -110,6 +131,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download JAR
+        if: matrix.service != 'frontend'
         uses: actions/download-artifact@v4
         with:
           name: jar-${{ matrix.service }}-${{ github.sha }}
@@ -142,6 +164,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
+            --no-cache \
             -f services/${{ matrix.service }}/Dockerfile \
             --build-context root-pom=. \
             --provenance=false \
@@ -177,7 +200,8 @@ jobs:
           SERVICES=$(echo '${{ needs.detect-changes.outputs.matrix }}' | python3 -c "import json,sys; print(' '.join(i['service'] for i in json.load(sys.stdin)['include']))")
           echo "Updating services: $SERVICES to tag: $IMAGE_TAG"
           for SVC in $SERVICES; do
-            sed -i "/- name: ${SVC}/{n;n;s/newTag: .*/newTag: ${IMAGE_TAG}/}" \
+            # Match full ECR image name in kustomization.yaml
+            sed -i "/${ECR_REGISTRY//\//\\/}\/${SVC}/{n;s/newTag: .*/newTag: ${IMAGE_TAG}/}" \
               k8s/overlays/dev/kustomization.yaml
           done
           grep "newTag" k8s/overlays/dev/kustomization.yaml
@@ -186,6 +210,7 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "GitHub Actions"
+          git pull origin main --rebase
           git add k8s/overlays/dev/kustomization.yaml
           git diff --staged --quiet || git commit -m "ci: update images to sha-${{ github.sha }} [skip ci]"
           git push
