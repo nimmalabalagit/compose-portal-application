@@ -15,6 +15,13 @@ FROM eclipse-temurin:17-jre-alpine AS runtime
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 COPY --from=builder /build/target/*.jar app.jar
+
+# WHY RDS CA bundle:
+# DocumentDB requires TLS. The AWS RDS CA bundle contains the root certificate
+# that DocumentDB uses. Without it, MongoDB driver cannot verify the server cert.
+# Downloaded at build time — no runtime dependency on external URLs.
+RUN apk add --no-cache wget &&     wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem     -O /app/rds-combined-ca-bundle.pem &&     chown appuser:appgroup /app/rds-combined-ca-bundle.pem &&     apk del wget
+
 RUN chown appuser:appgroup app.jar
 USER appuser
 VOLUME ["/tmp"]
