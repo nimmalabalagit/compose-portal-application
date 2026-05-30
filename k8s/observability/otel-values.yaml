@@ -1,4 +1,8 @@
+image:
+  repository: otel/opentelemetry-collector-contrib
+
 mode: daemonset
+
 config:
   receivers:
     otlp:
@@ -17,7 +21,7 @@ config:
   exporters:
     prometheus:
       endpoint: "0.0.0.0:8889"
-    logging:
+    debug:
       verbosity: warn
   service:
     pipelines:
@@ -28,7 +32,7 @@ config:
       traces:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [logging]
+        exporters: [debug]
 resources:
   limits:
     memory: 200Mi
