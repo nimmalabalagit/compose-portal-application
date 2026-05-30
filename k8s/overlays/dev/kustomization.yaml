@@ -41,7 +41,7 @@ patches:
         value: "5m"
 images:
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service
-    newTag: sha-f3757a95e62612ffb37764437641e89f9b94fce5
+    newTag: sha-7468b569f306f9ce42aeecc6e886fb1021114c7e
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/user-service
     newTag: sha-817430ed15ea2434e907d4dd824383f19ca4dd90
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service
