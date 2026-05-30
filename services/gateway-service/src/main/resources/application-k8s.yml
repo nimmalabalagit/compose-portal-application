@@ -34,3 +34,28 @@ spring:
               args:
                 name: order-service-cb
                 fallbackUri: forward:/fallback/order-service
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      user-service-cb:
+        slidingWindowSize: 20
+        failureRateThreshold: 80
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 5
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 10
+      product-service-cb:
+        slidingWindowSize: 20
+        failureRateThreshold: 80
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 5
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 10
+      order-service-cb:
+        slidingWindowSize: 20
+        failureRateThreshold: 80
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 5
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 10
