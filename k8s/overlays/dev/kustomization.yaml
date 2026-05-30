@@ -40,15 +40,11 @@ patches:
         path: /spec/refreshInterval
         value: "5m"
 images:
-  - name: gateway-service
-    newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service
+  - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service
     newTag: hotfix-1
-  - name: user-service
-    newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/user-service
+  - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/user-service
     newTag: sha-1fe5140d4adb4648b7e8829e8eea5197277acead
-  - name: product-service
-    newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service
+  - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service
     newTag: sha-1fe5140d4adb4648b7e8829e8eea5197277acead
-  - name: order-service
-    newName: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/order-service
+  - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/order-service
     newTag: sha-1fe5140d4adb4648b7e8829e8eea5197277acead
