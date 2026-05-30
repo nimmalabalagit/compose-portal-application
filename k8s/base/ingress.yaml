@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: grafana-ingress
-  namespace: observability
+  name: compose-portal-ingress
+  namespace: compose-portal
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
@@ -12,13 +12,13 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-  - host: grafana.estateflowai.co
+  - host: api.estateflowai.co
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: kube-prometheus-stack-grafana
+            name: gateway-service
             port:
-              number: 80
+              number: 8080
