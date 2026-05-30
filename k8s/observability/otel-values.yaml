@@ -22,7 +22,7 @@ config:
     prometheus:
       endpoint: "0.0.0.0:8889"
     debug:
-      verbosity: warn
+      verbosity: basic
   service:
     pipelines:
       metrics:
