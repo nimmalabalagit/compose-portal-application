@@ -1,0 +1,37 @@
+mode: daemonset
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+  processors:
+    batch:
+      send_batch_size: 1000
+      timeout: 10s
+    memory_limiter:
+      check_interval: 5s
+      limit_mib: 100
+  exporters:
+    prometheus:
+      endpoint: "0.0.0.0:8889"
+    logging:
+      verbosity: warn
+  service:
+    pipelines:
+      metrics:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [prometheus]
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [logging]
+resources:
+  limits:
+    memory: 200Mi
+  requests:
+    memory: 128Mi
+    cpu: 100m
