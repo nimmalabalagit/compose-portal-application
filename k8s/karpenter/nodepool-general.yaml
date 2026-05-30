@@ -24,4 +24,3 @@ spec:
     memory: 200Gi
   disruption:
     consolidationPolicy: WhenUnderutilized
-    consolidateAfter: 30s
