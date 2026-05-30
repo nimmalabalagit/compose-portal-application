@@ -47,4 +47,4 @@ images:
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/product-service
     newTag: sha-817430ed15ea2434e907d4dd824383f19ca4dd90
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/order-service
-    newTag: sha-7a1b1baa7644783b88a4167642d87fcfbcbdaed6
+    newTag: sha-fb77db9cabcce7ddf082addbcc1ea0b36dcae396
