@@ -70,7 +70,12 @@ resource "aws_organizations_policy" "deny_leave_org" {
   type        = "SERVICE_CONTROL_POLICY"
   content = jsonencode({
     Version = "2012-10-17"
-    Statement = [{ Sid = "DenyLeaveOrg"; Effect = "Deny"; Action = ["organizations:LeaveOrganization"]; Resource = "*" }]
+    Statement = [{
+        Sid      = "DenyLeaveOrg"
+        Effect   = "Deny"
+        Action   = ["organizations:LeaveOrganization"]
+        Resource = "*"
+      }]
   })
 }
 resource "aws_organizations_policy_attachment" "deny_leave_org_root" {

@@ -8,9 +8,21 @@ resource "aws_guardduty_detector" "security_account" {
   enable                       = true
   finding_publishing_frequency = "FIFTEEN_MINUTES"
   datasources {
-    s3_logs { enable = true }
-    kubernetes { audit_logs { enable = true } }
-    malware_protection { scan_ec2_instance_with_findings { ebs_volumes { enable = true } } }
+    s3_logs {
+      enable = true
+    }
+    kubernetes {
+      audit_logs {
+        enable = true
+      }
+    }
+    malware_protection {
+      scan_ec2_instance_with_findings {
+        ebs_volumes {
+          enable = true
+        }
+      }
+    }
   }
   provider = aws.security
 }
@@ -18,9 +30,21 @@ resource "aws_guardduty_organization_configuration" "this" {
   auto_enable_organization_members = "ALL"
   detector_id                      = aws_guardduty_detector.security_account.id
   datasources {
-    s3_logs { auto_enable = true }
-    kubernetes { audit_logs { enable = true } }
-    malware_protection { scan_ec2_instance_with_findings { ebs_volumes { auto_enable = true } } }
+    s3_logs {
+      auto_enable = true
+    }
+    kubernetes {
+      audit_logs {
+        enable = true
+      }
+    }
+    malware_protection {
+      scan_ec2_instance_with_findings {
+        ebs_volumes {
+          auto_enable = true
+        }
+      }
+    }
   }
   provider = aws.security
 }
@@ -80,16 +104,20 @@ resource "aws_s3_bucket_versioning" "cloudtrail" {
 }
 resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail" {
   bucket = aws_s3_bucket.cloudtrail.id
-  rule { apply_server_side_encryption_by_default {
-    sse_algorithm     = "aws:kms"
-    kms_master_key_id = aws_kms_key.cloudtrail.arn
-  } }
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.cloudtrail.arn
+    }
+  }
   provider = aws.security
 }
 resource "aws_s3_bucket_public_access_block" "cloudtrail" {
   bucket                  = aws_s3_bucket.cloudtrail.id
-  block_public_acls       = true; block_public_policy = true
-  ignore_public_acls      = true; restrict_public_buckets = true
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
   provider                = aws.security
 }
 resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail" {
