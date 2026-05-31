@@ -62,3 +62,13 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 5
         slidingWindowType: COUNT_BASED
         minimumNumberOfCalls: 10
+
+# Disable unused Spring Cloud Discovery Client
+# We use Kubernetes-native DNS — not Eureka/Consul service registry
+spring:
+  cloud:
+    discovery:
+      enabled: false
+    kubernetes:
+      discovery:
+        enabled: false
