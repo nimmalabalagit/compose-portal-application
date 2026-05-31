@@ -28,4 +28,5 @@ resources:
   - external-secrets/user-service-external-secret.yaml
   - external-secrets/product-service-external-secret.yaml
   - external-secrets/order-service-external-secret.yaml
-  - external-secrets/gateway-service-external-secret.yaml
+  - external-secrets/gateway-service-external-secret.yaml  - rabbitmq/deployment.yaml
+  - rabbitmq/service.yaml
