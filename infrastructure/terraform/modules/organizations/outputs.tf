@@ -1,0 +1,10 @@
+output "organization_id"     { value = aws_organizations_organization.this.id }
+output "root_id"             { value = aws_organizations_organization.this.roots[0].id }
+output "security_ou_id"      { value = aws_organizations_organizational_unit.security.id }
+output "dev_ou_id"           { value = aws_organizations_organizational_unit.dev.id }
+output "staging_ou_id"       { value = aws_organizations_organizational_unit.staging.id }
+output "prod_ou_id"          { value = aws_organizations_organizational_unit.prod.id }
+output "security_account_id" { value = aws_organizations_account.security.id }
+output "dev_account_id"      { value = aws_organizations_account.dev.id }
+output "staging_account_id"  { value = aws_organizations_account.staging.id }
+output "prod_account_id"     { value = aws_organizations_account.prod.id }
