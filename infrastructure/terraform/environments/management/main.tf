@@ -74,9 +74,5 @@ module "security_account" {
   aws_region            = var.aws_region
   security_account_id   = module.organizations.security_account_id
   management_account_id = data.aws_caller_identity.management.account_id
-  providers = {
-    aws.management = aws.management
-    aws.security   = aws.security
-  }
   depends_on            = [module.organizations, module.scp]
 }
