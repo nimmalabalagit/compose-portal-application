@@ -76,12 +76,20 @@ resource "aws_kms_key" "cloudtrail" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      { Sid = "EnableSecurityAccount"; Effect = "Allow"
+      {
+        Sid    = "EnableSecurityAccount"
+        Effect = "Allow"
         Principal = { AWS = "arn:aws:iam::${var.security_account_id}:root" }
-        Action = "kms:*"; Resource = "*" },
-      { Sid = "AllowCloudTrail"; Effect = "Allow"
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudTrail"
+        Effect = "Allow"
         Principal = { Service = "cloudtrail.amazonaws.com" }
-        Action = ["kms:GenerateDataKey*","kms:DescribeKey"]; Resource = "*" }
+        Action   = ["kms:GenerateDataKey*", "kms:DescribeKey"]
+        Resource = "*"
+      }
     ]
   })
   provider = aws.security
