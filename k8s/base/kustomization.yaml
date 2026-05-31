@@ -30,3 +30,6 @@ resources:
   - external-secrets/order-service-external-secret.yaml
   - external-secrets/gateway-service-external-secret.yaml  - rabbitmq/deployment.yaml
   - rabbitmq/service.yaml
+  - frontend/deployment.yaml
+  - frontend/service.yaml
+  - frontend/ingress.yaml

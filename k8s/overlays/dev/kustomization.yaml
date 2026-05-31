@@ -40,6 +40,7 @@ patches:
         path: /spec/refreshInterval
         value: "5m"
 images:
+  - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/frontend
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/gateway-service
     newTag: sha-7a1b1baa7644783b88a4167642d87fcfbcbdaed6
   - name: 371056712467.dkr.ecr.ap-south-1.amazonaws.com/user-service
