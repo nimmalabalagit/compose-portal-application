@@ -1,0 +1,77 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: aurora-postgresql
+  title: Aurora PostgreSQL 16.4
+  description: AWS Aurora PostgreSQL — users_db, products_db, orders_db. Multi-AZ, encrypted.
+  annotations:
+    aws/region: ap-south-1
+    aws/account-id: "371056712467"
+  tags:
+    - aws
+    - rds
+    - postgresql
+spec:
+  type: database
+  owner: platform-team
+  system: estateflowai
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: redis
+  title: Redis 8.6
+  description: ElastiCache Redis — rate limiting, session cache, product cache 5min TTL
+  tags:
+    - aws
+    - elasticache
+    - redis
+spec:
+  type: cache
+  owner: platform-team
+  system: estateflowai
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: documentdb
+  title: DocumentDB (MongoDB-compatible)
+  description: AWS DocumentDB — orders_audit collection, TLS enabled, JVM cacerts imported
+  tags:
+    - aws
+    - documentdb
+    - mongodb
+spec:
+  type: database
+  owner: platform-team
+  system: estateflowai
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: rabbitmq
+  title: RabbitMQ 3.13
+  description: RabbitMQ on EKS — order events queue, async processing
+  tags:
+    - rabbitmq
+    - messaging
+spec:
+  type: message-broker
+  owner: platform-team
+  system: estateflowai
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: eks-cluster
+  title: EKS 1.32 compose-portal-dev-eks
+  description: EKS 1.32 with Karpenter v0.37 Spot autoscaling, ap-south-1
+  tags:
+    - aws
+    - eks
+    - kubernetes
+    - karpenter
+spec:
+  type: kubernetes-cluster
+  owner: platform-team
+  system: estateflowai

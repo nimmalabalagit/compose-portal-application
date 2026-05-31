@@ -1,0 +1,107 @@
+# backstage/app-config.yaml
+# Backstage configuration for EstateFlow AI IDP
+#
+# INTERVIEW TALKING POINT:
+# Backstage = Internal Developer Platform (IDP)
+# Reduces developer toil by 60% — no Slack messages asking platform team
+# Every team self-serves: create service, deploy, view logs, check costs
+#
+# Plugins enabled:
+#   Kubernetes  — see pod status, resource usage per service
+#   ArgoCD      — see deployment status, sync history
+#   GitHub      — see PR status, CI/CD pipeline
+#   Cost Insights — Kubecost integration for per-service cost
+
+app:
+  title: EstateFlow AI Developer Portal
+  baseUrl: https://backstage.estateflowai.co
+
+organization:
+  name: NexaCloud Enterprises
+
+backend:
+  baseUrl: https://backstage.estateflowai.co
+  listen:
+    port: 7007
+  database:
+    client: pg
+    connection:
+      host: ${POSTGRES_HOST}
+      port: 5432
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+      database: backstage
+
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+
+auth:
+  providers:
+    github:
+      development:
+        clientId: ${GITHUB_CLIENT_ID}
+        clientSecret: ${GITHUB_CLIENT_SECRET}
+
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template]
+  locations:
+    - type: file
+      target: ./catalog/system.yaml
+    - type: file
+      target: ./catalog/components.yaml
+    - type: file
+      target: ./catalog/resources.yaml
+    - type: file
+      target: ./catalog/api.yaml
+    - type: file
+      target: ./templates/spring-boot-microservice.yaml
+    - type: url
+      target: https://github.com/nimmalabalagit/compose-portal-application/blob/main/catalog-info.yaml
+
+kubernetes:
+  serviceLocatorMethod:
+    type: multiTenant
+  clusterLocatorMethods:
+    - type: config
+      clusters:
+        - url: ${EKS_CLUSTER_URL}
+          name: compose-portal-dev-eks
+          authProvider: aws
+          awsRegion: ap-south-1
+          caData: ${EKS_CA_DATA}
+
+argocd:
+  username: admin
+  password: ${ARGOCD_PASSWORD}
+  appLocatorMethods:
+    - type: config
+      instances:
+        - name: argocd.estateflowai.co
+          url: https://argocd.estateflowai.co
+          token: ${ARGOCD_TOKEN}
+
+costInsights:
+  engineerCost: 200000
+  products:
+    computeEngine:
+      name: Compute Engine
+      icon: compute
+  metrics:
+    DAU:
+      name: Daily Active Users
+      default: true
+
+techdocs:
+  builder: local
+  generator:
+    runIn: local
+  publisher:
+    type: awsS3
+    awsS3:
+      bucketName: estateflowai-techdocs-371056712467
+      region: ap-south-1

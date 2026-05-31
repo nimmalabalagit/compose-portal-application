@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: estateflowai
+  title: EstateFlow AI Platform
+  description: Cloud-native real estate microservices platform on AWS EKS 1.32
+  annotations:
+    github.com/project-slug: nimmalabalagit/compose-portal-application
+  tags:
+    - aws
+    - eks
+    - spring-boot
+    - java
+    - platform-engineering
+spec:
+  owner: platform-team
+  domain: real-estate

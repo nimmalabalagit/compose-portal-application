@@ -1,0 +1,136 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: gateway-service
+  title: Gateway Service
+  description: Spring Cloud Gateway with Resilience4j circuit breaker, Redis rate limiting, CORS
+  annotations:
+    github.com/project-slug: nimmalabalagit/compose-portal-application
+    backstage.io/techdocs-ref: dir:./services/gateway-service
+    argocd/app-name: compose-portal-dev
+    prometheus.io/rule: |
+      - alert: GatewayCircuitOpen
+        expr: resilience4j_circuitbreaker_state{state="open"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Gateway circuit breaker OPEN
+  tags:
+    - java
+    - spring-boot
+    - gateway
+    - redis
+  links:
+    - url: https://api.estateflowai.co/actuator/health
+      title: Health Check
+    - url: https://grafana.estateflowai.co
+      title: Grafana Dashboard
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: estateflowai
+  providesApis:
+    - estateflowai-api
+  dependsOn:
+    - component:user-service
+    - component:product-service
+    - component:order-service
+    - resource:redis
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-service
+  title: User Service
+  description: User management with BCrypt auth, IRSA, Redis caching, Aurora PostgreSQL
+  annotations:
+    github.com/project-slug: nimmalabalagit/compose-portal-application
+    backstage.io/techdocs-ref: dir:./services/user-service
+  tags:
+    - java
+    - spring-boot
+    - postgresql
+    - redis
+  links:
+    - url: https://api.estateflowai.co/api/users
+      title: API Endpoint
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: estateflowai
+  dependsOn:
+    - resource:aurora-postgresql
+    - resource:redis
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: product-service
+  title: Product Service
+  description: Real estate listings with Redis caching 5min TTL, Aurora PostgreSQL
+  annotations:
+    github.com/project-slug: nimmalabalagit/compose-portal-application
+  tags:
+    - java
+    - spring-boot
+    - postgresql
+    - redis
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: estateflowai
+  dependsOn:
+    - resource:aurora-postgresql
+    - resource:redis
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: order-service
+  title: Order Service
+  description: Order processing with dual-write Aurora+DocumentDB, RabbitMQ events, SNS pipeline
+  annotations:
+    github.com/project-slug: nimmalabalagit/compose-portal-application
+  tags:
+    - java
+    - spring-boot
+    - postgresql
+    - mongodb
+    - rabbitmq
+    - sns
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: estateflowai
+  dependsOn:
+    - resource:aurora-postgresql
+    - resource:documentdb
+    - resource:rabbitmq
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: frontend
+  title: EstateFlow AI Frontend
+  description: React 18 dark command center UI served by nginx
+  annotations:
+    github.com/project-slug: nimmalabalagit/compose-portal-application
+  tags:
+    - react
+    - typescript
+    - nginx
+  links:
+    - url: https://www.estateflowai.co
+      title: Live Frontend
+spec:
+  type: website
+  lifecycle: production
+  owner: platform-team
+  system: estateflowai
+  dependsOn:
+    - component:gateway-service

@@ -1,0 +1,131 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: spring-boot-microservice
+  title: Spring Boot Microservice
+  description: Golden path template — creates new Spring Boot 3.2 microservice with Aurora, Redis, IRSA, GitHub Actions CI/CD, ArgoCD GitOps
+  tags:
+    - java
+    - spring-boot
+    - aws
+    - eks
+    - recommended
+spec:
+  owner: platform-team
+  type: service
+
+  parameters:
+    - title: Service Information
+      required:
+        - name
+        - port
+        - description
+        - owner
+      properties:
+        name:
+          title: Service Name
+          type: string
+          description: Name of the microservice (e.g. notification-service)
+          pattern: ^[a-z][a-z0-9-]*[a-z0-9]$
+          ui:autofocus: true
+        port:
+          title: Port Number
+          type: integer
+          description: Port number (8084-8099 for new services)
+          minimum: 8084
+          maximum: 8099
+        description:
+          title: Description
+          type: string
+          description: What does this service do?
+        owner:
+          title: Owner Team
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+
+    - title: AWS Configuration
+      properties:
+        database:
+          title: Database Required?
+          type: boolean
+          default: true
+        dbName:
+          title: Database Name
+          type: string
+          description: PostgreSQL database name (e.g. notifications_db)
+          default: notifications_db
+        redis:
+          title: Redis Cache Required?
+          type: boolean
+          default: true
+        cachePrefix:
+          title: Redis Cache Prefix
+          type: string
+          default: notifications
+
+    - title: Repository
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Spring Boot Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          port: ${{ parameters.port }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          dbName: ${{ parameters.dbName }}
+          cachePrefix: ${{ parameters.cachePrefix }}
+          awsAccount: "371056712467"
+          awsRegion: ap-south-1
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: main
+
+    - id: create-argocd-app
+      name: Create ArgoCD Application
+      action: argocd:create-resources
+      input:
+        appName: ${{ parameters.name }}-dev
+        argoInstance: argocd.estateflowai.co
+        namespace: compose-portal
+        repoUrl: https://github.com/nimmalabalagit/${{ parameters.name }}
+        path: k8s/overlays/dev
+
+    - id: register
+      name: Register in Backstage Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in ArgoCD
+        url: https://argocd.estateflowai.co/applications/${{ parameters.name }}-dev
+      - title: Open in Catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}

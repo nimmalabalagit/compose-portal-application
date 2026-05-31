@@ -1,0 +1,60 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: estateflowai-api
+  title: EstateFlow AI REST API
+  description: REST API for EstateFlow AI platform — users, products, orders
+  tags:
+    - rest
+    - spring-boot
+  links:
+    - url: https://api.estateflowai.co/actuator/health
+      title: Health Check
+spec:
+  type: openapi
+  lifecycle: production
+  owner: platform-team
+  system: estateflowai
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: EstateFlow AI API
+      version: 1.0.0
+      description: Cloud-native real estate platform API
+    servers:
+      - url: https://api.estateflowai.co
+    paths:
+      /api/users:
+        get:
+          summary: List all users
+          responses:
+            200:
+              description: Users list
+        post:
+          summary: Create user
+          responses:
+            201:
+              description: User created
+      /api/products:
+        get:
+          summary: List properties
+          responses:
+            200:
+              description: Properties list
+      /api/orders:
+        get:
+          summary: List orders
+          responses:
+            200:
+              description: Orders list
+        post:
+          summary: Create order
+          responses:
+            201:
+              description: Order created
+      /actuator/health:
+        get:
+          summary: Health check
+          responses:
+            200:
+              description: Service healthy
