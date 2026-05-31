@@ -37,7 +37,7 @@ export function createApiClient(baseURL: string): AxiosInstance {
         const msg = (data?.error as Record<string, string>)?.message || 'Validation failed'
         toast.error(msg, { duration: 4000 })
       } else if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
-        toast.error('Cannot reach API — is docker-compose up?', { duration: 6000, icon: '🔌' })
+        toast.error('Cannot reach API — check service health', { duration: 6000, icon: '🔌' })
       }
       return Promise.reject(error)
     }
