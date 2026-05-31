@@ -22,13 +22,28 @@ terraform {
 provider "aws" {
   region = var.aws_region
   alias  = "management"
-  default_tags { tags = { Project = "EstateFlow-AI"; ManagedBy = "Terraform"; Environment = "management"; Owner = "nbalakrishna" } }
+  default_tags {
+    tags = {
+      Project     = "EstateFlow-AI"
+      ManagedBy   = "Terraform"
+      Environment = "management"
+      Owner       = "nbalakrishna"
+    }
+  }
 }
 provider "aws" {
   region = var.aws_region
   alias  = "security"
-  assume_role { role_arn = "arn:aws:iam::${module.organizations.security_account_id}:role/OrganizationAccountAccessRole" }
-  default_tags { tags = { Project = "EstateFlow-AI"; ManagedBy = "Terraform"; Environment = "security" } }
+  assume_role {
+    role_arn = "arn:aws:iam::${module.organizations.security_account_id}:role/OrganizationAccountAccessRole"
+  }
+  default_tags {
+    tags = {
+      Project     = "EstateFlow-AI"
+      ManagedBy   = "Terraform"
+      Environment = "security"
+    }
+  }
 }
 
 data "aws_caller_identity" "management" { provider = aws.management }
