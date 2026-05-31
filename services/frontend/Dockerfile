@@ -11,7 +11,7 @@ RUN npm ci --quiet
 
 COPY . .
 # Vite build produces /app/dist with content-hashed filenames
-RUN npm run build
+RUN npx vite build
 
 # ── Stage 2: nginx serving React ──────────────────────────────────────────────
 # WHY nginx:1.27-alpine (not node): Runtime needs only a static file server.
