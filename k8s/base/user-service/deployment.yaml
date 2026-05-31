@@ -55,6 +55,8 @@ spec:
           env:
             - name: SERVER_PORT
               value: "8081"
+            - name: REDIS_PORT
+              value: "6379"
             - name: SPRING_PROFILES_ACTIVE
               value: "k8s"
             - name: OTEL_SERVICE_NAME
