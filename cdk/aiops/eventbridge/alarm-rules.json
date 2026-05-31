@@ -1,0 +1,115 @@
+# cdk/aiops/eventbridge/alarm-rules.json
+{
+  "Rules": [
+    {
+      "Name": "estateflowai-p1-p2-alarms",
+      "Description": "Route P1/P2 alarms to AIOps triage — human-in-loop required",
+      "EventPattern": {
+        "source": ["aws.cloudwatch"],
+        "detail-type": ["CloudWatch Alarm State Change"],
+        "detail": {
+          "alarmName": [{"prefix": "estateflowai-P1-"}, {"prefix": "estateflowai-P2-"}],
+          "state": {"value": ["ALARM"]}
+        }
+      },
+      "Targets": [
+        {
+          "Id": "AIOpsTriageLambda",
+          "Arn": "arn:aws:lambda:ap-south-1:371056712467:function:estateflowai-aiops-triage",
+          "RetryPolicy": {
+            "MaximumRetryAttempts": 2,
+            "MaximumEventAgeInSeconds": 300
+          }
+        },
+        {
+          "Id": "PagerDutySNS",
+          "Arn": "arn:aws:sns:ap-south-1:371056712467:estateflowai-pagerduty",
+          "Comment": "P1/P2 always pages on-call engineer regardless of AI triage"
+        }
+      ]
+    },
+    {
+      "Name": "estateflowai-p3-p4-alarms",
+      "Description": "Route P3/P4 alarms to AIOps — autonomous remediation allowed",
+      "EventPattern": {
+        "source": ["aws.cloudwatch"],
+        "detail-type": ["CloudWatch Alarm State Change"],
+        "detail": {
+          "alarmName": [{"prefix": "estateflowai-P3-"}, {"prefix": "estateflowai-P4-"}],
+          "state": {"value": ["ALARM"]}
+        }
+      },
+      "Targets": [
+        {
+          "Id": "AIOpsTriageLambda",
+          "Arn": "arn:aws:lambda:ap-south-1:371056712467:function:estateflowai-aiops-triage",
+          "RetryPolicy": {
+            "MaximumRetryAttempts": 3,
+            "MaximumEventAgeInSeconds": 600
+          }
+        }
+      ]
+    },
+    {
+      "Name": "estateflowai-post-deploy-analysis",
+      "Description": "Run AI analysis 5min after every ArgoCD sync",
+      "EventPattern": {
+        "source": ["aws.cloudwatch"],
+        "detail-type": ["CloudWatch Alarm State Change"],
+        "detail": {
+          "alarmName": [{"prefix": "estateflowai-post-deploy-"}]
+        }
+      },
+      "Targets": [
+        {
+          "Id": "PostDeployAnalysisLambda",
+          "Arn": "arn:aws:lambda:ap-south-1:371056712467:function:estateflowai-aiops-triage"
+        }
+      ]
+    }
+  ],
+  "CloudWatchAlarms": [
+    {
+      "AlarmName": "estateflowai-P1-gateway-error-rate",
+      "AlarmDescription": "Gateway error rate > 5% for 2 minutes",
+      "Namespace": "AWS/ApplicationELB",
+      "MetricName": "HTTPCode_Target_5XX_Count",
+      "Threshold": 50,
+      "Period": 60,
+      "EvaluationPeriods": 2,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "TreatMissingData": "notBreaching"
+    },
+    {
+      "AlarmName": "estateflowai-P2-order-service-down",
+      "AlarmDescription": "Order service health check failing",
+      "Namespace": "AWS/ApplicationELB",
+      "MetricName": "HealthyHostCount",
+      "Dimensions": [{"Name": "TargetGroup", "Value": "order-service"}],
+      "Threshold": 1,
+      "Period": 60,
+      "EvaluationPeriods": 2,
+      "ComparisonOperator": "LessThanThreshold"
+    },
+    {
+      "AlarmName": "estateflowai-P3-circuit-breaker-open",
+      "AlarmDescription": "Resilience4j circuit breaker OPEN on any service",
+      "Namespace": "EstateFlow/Services",
+      "MetricName": "CircuitBreakerState",
+      "Threshold": 1,
+      "Period": 60,
+      "EvaluationPeriods": 1,
+      "ComparisonOperator": "GreaterThanOrEqualToThreshold"
+    },
+    {
+      "AlarmName": "estateflowai-P4-high-latency",
+      "AlarmDescription": "P99 latency > 2000ms",
+      "Namespace": "EstateFlow/Services",
+      "MetricName": "P99Latency",
+      "Threshold": 2000,
+      "Period": 300,
+      "EvaluationPeriods": 2,
+      "ComparisonOperator": "GreaterThanThreshold"
+    }
+  ]
+}

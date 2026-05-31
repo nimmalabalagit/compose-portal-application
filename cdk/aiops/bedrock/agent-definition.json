@@ -1,0 +1,107 @@
+# cdk/aiops/bedrock/agent-definition.json
+{
+  "agentName": "estateflowai-aiops-agent",
+  "description": "AIOps agent for EstateFlow AI platform — autonomous triage, RCA, remediation",
+  "instruction": "You are an expert AWS DevOps SRE agent for EstateFlow AI platform running on EKS 1.32 in ap-south-1. Your job is to analyze production incidents, identify root causes, and recommend or execute remediation actions. You have access to CloudWatch metrics, ArgoCD deployment history, and Kubernetes pod status. For P1/P2 incidents: analyze and recommend only — never auto-remediate. For P3/P4 incidents: you may execute rollback if deployment-related. Always respond with structured JSON containing root_cause, blast_radius, remediation, deployment_related, and prevention fields.",
+  "foundationModel": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+  "idleSessionTTLInSeconds": 1800,
+  "agentResourceRoleArn": "arn:aws:iam::371056712467:role/estateflowai-bedrock-agent",
+  "actionGroups": [
+    {
+      "actionGroupName": "CloudWatchActions",
+      "description": "Query CloudWatch metrics and alarms",
+      "actionGroupExecutor": {
+        "lambda": "arn:aws:lambda:ap-south-1:371056712467:function:estateflowai-aiops-triage"
+      },
+      "apiSchema": {
+        "payload": {
+          "openapi": "3.0.0",
+          "info": {
+            "title": "CloudWatch Actions",
+            "version": "1.0.0"
+          },
+          "paths": {
+            "/getMetrics": {
+              "post": {
+                "description": "Get recent CloudWatch metrics for a service",
+                "operationId": "getMetrics",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "service": {"type": "string"},
+                          "minutes": {"type": "integer", "default": 5}
+                        }
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {"description": "Metrics data"}
+                }
+              }
+            },
+            "/getRecentDeployments": {
+              "post": {
+                "description": "Get ArgoCD deployment history for last N minutes",
+                "operationId": "getRecentDeployments",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "service": {"type": "string"},
+                          "minutes": {"type": "integer", "default": 30}
+                        }
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {"description": "Deployment history"}
+                }
+              }
+            },
+            "/rollbackDeployment": {
+              "post": {
+                "description": "Rollback ArgoCD application to previous revision. ONLY for P3/P4.",
+                "operationId": "rollbackDeployment",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "appName": {"type": "string"},
+                          "severity": {"type": "string", "enum": ["P3", "P4"]}
+                        },
+                        "required": ["appName", "severity"]
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {"description": "Rollback result"}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "knowledgeBases": [
+    {
+      "description": "EstateFlow AI runbooks and architecture documentation",
+      "knowledgeBaseId": "RUNBOOK-KB-ID",
+      "retrievalConfiguration": {
+        "vectorSearchConfiguration": {
+          "numberOfResults": 5
+        }
+      }
+    }
+  ]
+}
