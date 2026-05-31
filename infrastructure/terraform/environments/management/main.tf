@@ -5,7 +5,10 @@
 terraform {
   required_version = ">= 1.7.0"
   required_providers {
-    aws = { source = "hashicorp/aws"; version = "~> 5.40" }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.40"
+    }
   }
   backend "s3" {
     bucket         = "estateflowai-terraform-state-371056712467"
@@ -56,6 +59,9 @@ module "security_account" {
   aws_region            = var.aws_region
   security_account_id   = module.organizations.security_account_id
   management_account_id = data.aws_caller_identity.management.account_id
-  providers             = { aws.management = aws.management; aws.security = aws.security }
+  providers = {
+    aws.management = aws.management
+    aws.security   = aws.security
+  }
   depends_on            = [module.organizations, module.scp]
 }
