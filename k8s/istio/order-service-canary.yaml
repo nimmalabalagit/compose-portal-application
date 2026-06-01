@@ -52,7 +52,6 @@ spec:
         maxConnections: 100
       http:
         http2MaxRequests: 1000
-        pendingHttpRequests: 1000
     # WHY outlierDetection:
     # Circuit breaker at the Istio level — independent of Resilience4j in gateway-service.
     # If order-service v2 is returning >50% errors, Istio stops routing to it automatically.
