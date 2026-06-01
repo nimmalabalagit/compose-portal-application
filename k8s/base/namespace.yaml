@@ -9,7 +9,7 @@ metadata:
     # have privilege escalation, or missing seccompProfile.
     # Without PSA, runAsNonRoot in SecurityContext is advisory only.
     # With PSA enforce, it's a hard gate — pod won't schedule at all.
-    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
     app.kubernetes.io/managed-by: argocd
