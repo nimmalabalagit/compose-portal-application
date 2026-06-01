@@ -397,30 +397,24 @@ def post_slack_summary(alarm, rca, remediation, context_data):
                 {
                     "type": "section",
                     "fields": [
-                        {"type": "mrkdwn", "text": f"*Alarm:*
-{alarm['name']}"},
-                        {"type": "mrkdwn", "text": f"*Service:*
-{alarm['service']}"},
-                        {"type": "mrkdwn", "text": f"*Severity:*
-{alarm['severity']}"},
-                        {"type": "mrkdwn", "text": f"*Time:*
-{alarm['timestamp']}"},
+                        {"type": "mrkdwn", "text": f"*Alarm:* {alarm['name']}"},
+                        {"type": "mrkdwn", "text": f"*Service:* {alarm['service']}"},
+                        {"type": "mrkdwn", "text": f"*Severity:* {alarm['severity']}"},
+                        {"type": "mrkdwn", "text": f"*Time:* {alarm['timestamp']}"},
                     ],
                 },
                 {
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": f"*Root Cause:*
-{rca.get('root_cause', 'Analyzing...')}",
+                        "text": f"*Root Cause:* {rca.get('root_cause', 'Analyzing...')}",
                     },
                 },
                 {
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": f"*Recommended Action:*
-{rca.get('remediation', 'Manual review')}",
+                        "text": f"*Recommended Action:* {rca.get('remediation', 'Manual review')}",
                     },
                 },
             ],
