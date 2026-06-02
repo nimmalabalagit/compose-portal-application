@@ -28,3 +28,4 @@ Thumbs.db
 **/.mvn/timing.properties
 **/.mvn/wrapper/maven-wrapper.jar
 
+*.zip
