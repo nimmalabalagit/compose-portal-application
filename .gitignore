@@ -29,3 +29,5 @@ Thumbs.db
 **/.mvn/wrapper/maven-wrapper.jar
 
 *.zip
+cdk/cdk.out/
+*.zip

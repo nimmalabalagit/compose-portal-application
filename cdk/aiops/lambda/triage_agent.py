@@ -218,6 +218,9 @@ def get_pod_status(service):
 
 
 def invoke_bedrock_rca(alarm, context_data):
+    agent_id = os.environ.get("BEDROCK_AGENT_ID", "disabled")
+    if agent_id in ["disabled", "placeholder", ""]:
+        return rule_based_rca(alarm, context_data)
     """
     Invoke Bedrock Agent for root cause analysis.
 
@@ -226,7 +229,8 @@ def invoke_bedrock_rca(alarm, context_data):
     Agent can autonomously decide to query additional data sources.
     Agent maintains conversation history across multi-step reasoning.
     """
-    if not BEDROCK_AGENT_ID:
+    agent_id = os.environ.get("BEDROCK_AGENT_ID", "disabled")
+    if not agent_id or agent_id in ["disabled", "placeholder"]:
         # Fallback: rule-based RCA if no agent configured
         return rule_based_rca(alarm, context_data)
 
@@ -376,6 +380,10 @@ def auto_remediate(alarm, rca, context_data):
 def post_slack_summary(alarm, rca, remediation, context_data):
     """Post incident summary to Slack #incidents channel."""
     try:
+        slack_path = os.environ.get("SLACK_WEBHOOK_SSM_PATH", "disabled")
+        if slack_path == "disabled":
+            print("Slack disabled — skipping notification")
+            return
         webhook_url = ssm.get_parameter(
             Name=SLACK_WEBHOOK_SSM,
             WithDecryption=True
