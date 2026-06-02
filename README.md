@@ -259,8 +259,8 @@ Layer 5: AIOps
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-nimmala--balakrishna-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/nimmala-balakrishna/)
 [![Email](https://img.shields.io/badge/Email-nbalakrishna.devops%40gmail.com-red?style=flat&logo=gmail)](mailto:nbalakrishna.devops@gmail.com)
 
-AWS SAA-C03 Certified | Kubernetes | Terraform | Hyderabad, India
+AWS | Kubernetes | Terraform | Hyderabad, India
 
 ---
 
-*AWS ap-south-1 | EKS 1.32 | Terraform 97 resources | Spring Boot 3.2.3 | Jan 2025 – Jan 2026*
+*AWS ap-south-1 | EKS 1.32 | Terraform 97 resources | Spring Boot 3.2.3 |  2026*
