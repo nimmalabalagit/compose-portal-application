@@ -132,7 +132,7 @@ jobs:
 
       - name: Download JAR
         if: matrix.service != 'frontend'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: jar-${{ matrix.service }}-${{ github.sha }}
           path: services/${{ matrix.service }}/target/
