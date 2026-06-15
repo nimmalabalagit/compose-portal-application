@@ -219,7 +219,7 @@ Layer 5: AIOps         → Bedrock agents triage and remediate in under 3 minute
 | Service mesh | Istio PERMISSIVE | STRICT blocked by PodSecurity (NET_ADMIN) |
 | CI auth | OIDC | Stored keys: never expire, leak risk |
 | Image tags | git SHA | `:latest` is mutable — untraceable |
-| AIOps | Custom Bedrock agents | Built 12 months before AWS shipped managed equivalents |
+| AIOps | Custom Bedrock agents | Built 6 months before AWS shipped managed equivalents |
 
 ---
 
