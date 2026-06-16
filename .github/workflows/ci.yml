@@ -78,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         if: matrix.service != 'frontend'
         with:
           java-version: '17'
